@@ -86,7 +86,8 @@ const I18={
     elig_review:'Avis médical requis',
     elig_deferred:'Non éligible actuellement',
     mapSearchPh:'Ville, hôpital, quartier...',
-    mapSearchNone:'Aucun lieu trouvé.'
+    mapSearchNone:'Aucun lieu trouvé.',
+    geoErr:'Localisation indisponible.'
   },
   en:{
     tag:'Give • Save • Live',end:'Together,<br>to save lives',
@@ -139,7 +140,8 @@ const I18={
     elig_review:'Medical review advised',
     elig_deferred:'Currently deferred',
     mapSearchPh:'City, hospital, area...',
-    mapSearchNone:'Place not found.'
+    mapSearchNone:'Place not found.',
+    geoErr:'Location unavailable.'
   },
   ar:{
     tag:'تبرّع • أنقذ • عِش',end:'معًا،<br>لإنقاذ الأرواح',
@@ -192,7 +194,8 @@ const I18={
     elig_review:'يُنصح باستشارة الطبيب',
     elig_deferred:'غير مؤهّل حاليًا',
     mapSearchPh:'مدينة، مستشفى، حي...',
-    mapSearchNone:'لم يتم العثور على الموقع.'
+    mapSearchNone:'لم يتم العثور على الموقع.',
+    geoErr:'تعذر تحديد الموقع.'
   }
 };
 
@@ -763,12 +766,12 @@ async function initMap(id){
     const mzout=document.querySelector('[data-mzout]');if(mzout)mzout.onclick=()=>mapCtl&&mapCtl.zoomOut();
     const mme=document.querySelector('[data-mme]');
     if(mme)mme.onclick=()=>{
-      if(!navigator.geolocation)return toast();
+      if(!navigator.geolocation)return toast(t('geoErr'));
       navigator.geolocation.getCurrentPosition(async p=>{
         userCoords={lat:p.coords.latitude,lng:p.coords.longitude};
         if(mapCtl)mapCtl.me(userCoords);
         await loadDonors();
-      },()=>toast(),{timeout:8000});
+      },()=>toast(t('geoErr')),{timeout:8000});
     };
     const msf=document.getElementById('mapSearchForm');
     if(msf)msf.onsubmit=async e=>{
