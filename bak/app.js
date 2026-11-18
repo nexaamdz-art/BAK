@@ -1055,6 +1055,19 @@ document.addEventListener('click',async e=>{
 addEventListener('hashchange',render);
 
 (async()=>{
+  if(location.hash&&(location.hash.includes('access_token=')||location.hash.includes('error_description='))){
+    const hp=new URLSearchParams(location.hash.replace(/^#/, ''));
+    const at=hp.get('access_token');
+    const rt=hp.get('refresh_token');
+    const ed=hp.get('error_description');
+    if(at){
+      saveSession({access_token:at,refresh_token:rt||''});
+      history.replaceState(null,'',location.pathname+location.search+'#/home');
+    }else if(ed){
+      authErr=ed;
+      history.replaceState(null,'',location.pathname+location.search+'#/auth');
+    }
+  }
   await hydrateAuth();
   loadDonors().catch(()=>{});
   render();

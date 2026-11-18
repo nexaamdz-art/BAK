@@ -28,16 +28,34 @@ const WILAYA_COORDS = {
 
 app.use(express.json({ limit: '1mb' }));
 
+function getSupabaseUrl() {
+  return (
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    ''
+  ).trim();
+}
+
 function getSupabaseKey() {
-  return process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+  return (
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_KEY ||
+    ''
+  ).trim();
 }
 
 function isSupabaseConfigured() {
-  return Boolean(process.env.SUPABASE_URL && getSupabaseKey());
+  return Boolean(getSupabaseUrl() && getSupabaseKey());
 }
 
 function getSupabaseClient(accessToken) {
-  const url = process.env.SUPABASE_URL;
+  const url = getSupabaseUrl();
   const key = getSupabaseKey();
   if (!url || !key) return null;
 
@@ -312,24 +330,34 @@ app.post('/api/auth/signup', requireSupabase, async (req, res) => {
           ? is_donor
           : true;
 
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    const originHeader = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
+    const redirectBase = originHeader || (host ? `${proto}://${host}` : '');
+
     const supabase = getSupabaseClient();
+    const signUpOptions = {
+      data: {
+        full_name: full_name.trim(),
+        blood_group: cleanBlood,
+        wilaya: cleanWilaya,
+        birth_date: typeof birth_date === 'string' ? birth_date.trim() : '',
+        phone: typeof phone === 'string' ? phone.trim() : '',
+        is_donor: donorFlag,
+        lat: coords.lat,
+        lng: coords.lng,
+        avatar: 'me',
+        ...health,
+      },
+    };
+    if (redirectBase && !/localhost|127\.0\.0\.1/.test(redirectBase)) {
+      signUpOptions.emailRedirectTo = `${redirectBase.replace(/\/+$/, '')}/`;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: {
-        data: {
-          full_name: full_name.trim(),
-          blood_group: cleanBlood,
-          wilaya: cleanWilaya,
-          birth_date: typeof birth_date === 'string' ? birth_date.trim() : '',
-          phone: typeof phone === 'string' ? phone.trim() : '',
-          is_donor: donorFlag,
-          lat: coords.lat,
-          lng: coords.lng,
-          avatar: 'me',
-          ...health,
-        },
-      },
+      options: signUpOptions,
     });
 
     if (error) {
@@ -853,6 +881,15 @@ app.get('/api/geocode', async (req, res) => {
     console.error('Geocode error:', err);
     return res.status(500).json({ error: 'SERVER_ERROR', results: [] });
   }
+});
+
+app.get('/api/health', (_req, res) => {
+  res.json({
+    ok: true,
+    supabaseConfigured: isSupabaseConfigured(),
+    hasUrl: Boolean(getSupabaseUrl()),
+    hasKey: Boolean(getSupabaseKey()),
+  });
 });
 
 /* ---------- Static Frontend & SPA Fallback ---------- */
