@@ -1,0 +1,16 @@
+{
+  "name": "BAK — Donner • Sauver • Vivre",
+  "short_name": "BAK",
+  "description": "Trouvez un donneur de sang près de chez vous. Un geste. Une vie. Un avenir.",
+  "start_url": "./index.html#/home",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0506",
+  "theme_color": "#0a0506",
+  "lang": "fr",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
