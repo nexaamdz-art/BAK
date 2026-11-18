@@ -161,6 +161,61 @@ async function requireAuth(req, res, next) {
   next();
 }
 
+const HEALTH_COLS = [
+  'weight_over_50',
+  'has_chronic_illness',
+  'illness_details',
+  'recent_surgery_or_tattoo',
+  'taking_medication',
+  'last_donation_date',
+  'eligibility_status',
+];
+
+function computeEligibility(h) {
+  if (!h.weight_over_50 || h.has_chronic_illness) return 'deferred';
+  if (h.recent_surgery_or_tattoo || h.taking_medication) return 'review';
+  return 'eligible';
+}
+
+function extractHealthFields(src = {}) {
+  const health = {
+    weight_over_50: typeof src.weight_over_50 === 'boolean' ? src.weight_over_50 : true,
+    has_chronic_illness: typeof src.has_chronic_illness === 'boolean' ? src.has_chronic_illness : false,
+    illness_details: typeof src.illness_details === 'string' ? src.illness_details.trim() : '',
+    recent_surgery_or_tattoo:
+      typeof src.recent_surgery_or_tattoo === 'boolean' ? src.recent_surgery_or_tattoo : false,
+    taking_medication: typeof src.taking_medication === 'boolean' ? src.taking_medication : false,
+    last_donation_date: typeof src.last_donation_date === 'string' ? src.last_donation_date.trim() : '',
+  };
+  health.eligibility_status = computeEligibility(health);
+  return health;
+}
+
+function isMissingColumnError(err) {
+  if (!err) return false;
+  const msg = String(err.message || '');
+  return err.code === '42703' || err.code === 'PGRST204' || msg.includes('column') || msg.includes('schema cache');
+}
+
+function stripHealthCols(obj) {
+  const copy = { ...obj };
+  for (const col of HEALTH_COLS) delete copy[col];
+  return copy;
+}
+
+function mergeHealthMeta(profile, user) {
+  if (!profile) return profile;
+  const meta = (user && user.user_metadata) || {};
+  const fallback = extractHealthFields(meta);
+  const merged = { ...profile };
+  for (const col of HEALTH_COLS) {
+    if (merged[col] === undefined) {
+      merged[col] = fallback[col];
+    }
+  }
+  return merged;
+}
+
 async function ensureProfile(supabase, user) {
   const { data: existing, error: selErr } = await supabase
     .from('profiles')
@@ -172,13 +227,15 @@ async function ensureProfile(supabase, user) {
     throw selErr;
   }
   if (existing) {
-    return existing;
+    return mergeHealthMeta(existing, user);
   }
 
   const meta = user.user_metadata || {};
   const wilaya = typeof meta.wilaya === 'string' && meta.wilaya.trim() ? meta.wilaya.trim() : 'Alger';
   const baseCoords = coordsForWilaya(wilaya);
   const bloodGroup = BLOOD_GROUPS.includes(meta.blood_group) ? meta.blood_group : 'O+';
+  const health = extractHealthFields(meta);
+  const donorAllowed = health.eligibility_status === 'deferred' ? false : (typeof meta.is_donor === 'boolean' ? meta.is_donor : true);
 
   const payload = {
     id: user.id,
@@ -192,22 +249,31 @@ async function ensureProfile(supabase, user) {
     birth_date: typeof meta.birth_date === 'string' ? meta.birth_date : '',
     phone: typeof meta.phone === 'string' ? meta.phone : '',
     avatar: AVATARS.includes(meta.avatar) ? meta.avatar : 'me',
-    is_donor: typeof meta.is_donor === 'boolean' ? meta.is_donor : true,
+    is_donor: donorAllowed,
     lat: typeof meta.lat === 'number' ? meta.lat : baseCoords.lat,
     lng: typeof meta.lng === 'number' ? meta.lng : baseCoords.lng,
     notifications_enabled: true,
+    ...health,
   };
 
-  const { data: inserted, error: insErr } = await supabase
+  let { data: inserted, error: insErr } = await supabase
     .from('profiles')
     .upsert(payload, { onConflict: 'id' })
     .select('*')
     .single();
 
+  if (insErr && isMissingColumnError(insErr)) {
+    ({ data: inserted, error: insErr } = await supabase
+      .from('profiles')
+      .upsert(stripHealthCols(payload), { onConflict: 'id' })
+      .select('*')
+      .single());
+  }
+
   if (insErr) {
     throw insErr;
   }
-  return inserted;
+  return mergeHealthMeta(inserted, user);
 }
 
 /* ---------- Auth API ---------- */
@@ -238,7 +304,13 @@ app.post('/api/auth/signup', requireSupabase, async (req, res) => {
     const cleanWilaya = typeof wilaya === 'string' && wilaya.trim() ? wilaya.trim() : 'Alger';
     const coords = coordsForWilaya(cleanWilaya);
     const cleanBlood = BLOOD_GROUPS.includes(blood_group) ? blood_group : 'O+';
-    const donorFlag = typeof is_donor === 'boolean' ? is_donor : true;
+    const health = extractHealthFields(req.body || {});
+    const donorFlag =
+      health.eligibility_status === 'deferred'
+        ? false
+        : typeof is_donor === 'boolean'
+          ? is_donor
+          : true;
 
     const supabase = getSupabaseClient();
     const { data, error } = await supabase.auth.signUp({
@@ -255,6 +327,7 @@ app.post('/api/auth/signup', requireSupabase, async (req, res) => {
           lat: coords.lat,
           lng: coords.lng,
           avatar: 'me',
+          ...health,
         },
       },
     });
@@ -444,20 +517,49 @@ app.put('/api/profile', requireAuth, async (req, res) => {
       updates.lng = body.lng;
     }
 
-    await ensureProfile(req.supabase, req.user);
+    const hasHealthInput =
+      'weight_over_50' in body ||
+      'has_chronic_illness' in body ||
+      'illness_details' in body ||
+      'recent_surgery_or_tattoo' in body ||
+      'taking_medication' in body ||
+      'last_donation_date' in body;
 
-    const { data, error } = await req.supabase
+    const existingProfile = await ensureProfile(req.supabase, req.user);
+    let healthMeta = null;
+
+    if (hasHealthInput) {
+      const mergedHealth = extractHealthFields({ ...existingProfile, ...body });
+      Object.assign(updates, mergedHealth);
+      if (mergedHealth.eligibility_status === 'deferred') {
+        updates.is_donor = false;
+      }
+      healthMeta = mergedHealth;
+      await req.supabase.auth.updateUser({ data: mergedHealth }).catch(() => {});
+    }
+
+    let { data, error } = await req.supabase
       .from('profiles')
       .update(updates)
       .eq('id', req.user.id)
       .select('*')
       .single();
 
+    if (error && isMissingColumnError(error)) {
+      ({ data, error } = await req.supabase
+        .from('profiles')
+        .update(stripHealthCols(updates))
+        .eq('id', req.user.id)
+        .select('*')
+        .single());
+    }
+
     if (error) {
       return res.status(400).json({ error: 'PROFILE_UPDATE_FAILED', message: error.message });
     }
 
-    return res.json({ profile: data });
+    const outProfile = healthMeta ? { ...data, ...healthMeta } : mergeHealthMeta(data, req.user);
+    return res.json({ profile: outProfile });
   } catch (err) {
     console.error('Profile update error:', err);
     return res.status(500).json({ error: 'SERVER_ERROR', message: err.message || 'Failed to update profile' });

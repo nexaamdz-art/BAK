@@ -207,3 +207,14 @@ html.light .fcard{background:#fff8f5;border-color:rgba(80,10,10,.15)}
 .pres button{padding:5px 10px;border-radius:14px;background:rgba(196,17,29,.1);border:1px solid rgba(196,17,29,.25);color:#5a181c;font-size:13.5px;font-weight:700}
 .emptycard{text-align:center;padding:24px 16px;color:var(--mut);font-style:italic}
 .emptycard .btn{margin-top:14px}
+.qsec{margin:10px 0 12px;padding-top:10px;border-top:1px dashed rgba(90,40,30,.24);text-align:start}
+.qsec h4{font:700 17px var(--serif);color:#8e0912;margin-bottom:8px}
+.qrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:15px;color:#3b1b15;line-height:1.2}
+.qrow span{flex:1}
+.yn{display:flex;gap:4px;flex:none}
+.yn button{min-width:46px;height:30px;padding:0 10px;border-radius:14px;background:rgba(90,40,30,.1);color:#4a231c;font-size:13.5px;font-weight:700;border:1px solid rgba(90,40,30,.2)}
+.yn button.on{background:linear-gradient(#e0212e,#a30b15);color:#fff;border-color:#d6121f}
+.elig{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 12px;border-radius:14px;font-size:13.5px;font-weight:700}
+.elig.eligible{background:rgba(32,140,68,.18);color:#2fd35a;border:1px solid rgba(47,211,90,.4)}
+.elig.review{background:rgba(240,165,0,.16);color:#ffb732;border:1px solid rgba(255,183,50,.4)}
+.elig.deferred{background:rgba(214,18,31,.2);color:#ff6b75;border:1px solid rgba(255,107,117,.45)}

@@ -73,7 +73,18 @@ const I18={
     srvMissing:'Le serveur Supabase n\'est pas encore configuré (SUPABASE_URL / SUPABASE_ANON_KEY).',
     donsUnit:'dons',livesUnit:'vies sauvées',
     allWilayas:'Toutes les wilayas',
-    viewDonations:'Voir mes dons'
+    viewDonations:'Voir mes dons',
+    medTitle:'Questionnaire médical du donneur',
+    qWeight:'Pesez-vous 50 kg ou plus ?',
+    qIllness:'Avez-vous une maladie chronique ou transmissible (diabète, hépatite, cœur...) ?',
+    qIllnessDet:'Précisez (optionnel)',
+    qSurgery:'Chirurgie, tatouage ou piercing lors des 6 derniers mois ?',
+    qMeds:'Prenez-vous un traitement médical actuellement ?',
+    qLastDon:'Date du dernier don (optionnel)',
+    yes:'Oui',no:'Non',
+    elig_eligible:'Éligible au don',
+    elig_review:'Avis médical requis',
+    elig_deferred:'Non éligible actuellement'
   },
   en:{
     tag:'Give • Save • Live',end:'Together,<br>to save lives',
@@ -113,7 +124,18 @@ const I18={
     srvMissing:'Supabase is not configured on the server yet (SUPABASE_URL / SUPABASE_ANON_KEY).',
     donsUnit:'donations',livesUnit:'lives saved',
     allWilayas:'All provinces',
-    viewDonations:'View my donations'
+    viewDonations:'View my donations',
+    medTitle:'Donor Health Questionnaire',
+    qWeight:'Do you weigh 50 kg or more?',
+    qIllness:'Do you have any chronic or infectious illness (heart disease, hepatitis, insulin diabetes...)?',
+    qIllnessDet:'Please specify (optional)',
+    qSurgery:'Surgery, tattoo, or piercing in the last 6 months?',
+    qMeds:'Are you currently taking any medication?',
+    qLastDon:'Date of last blood donation (optional)',
+    yes:'Yes',no:'No',
+    elig_eligible:'Eligible to donate',
+    elig_review:'Medical review advised',
+    elig_deferred:'Currently deferred'
   },
   ar:{
     tag:'تبرّع • أنقذ • عِش',end:'معًا،<br>لإنقاذ الأرواح',
@@ -153,7 +175,18 @@ const I18={
     srvMissing:'لم يتم ضبط مفاتيح Supabase على الخادم بعد (SUPABASE_URL / SUPABASE_ANON_KEY).',
     donsUnit:'تبرعات',livesUnit:'أرواح أُنقذت',
     allWilayas:'جميع الولايات',
-    viewDonations:'عرض تبرعاتي'
+    viewDonations:'عرض تبرعاتي',
+    medTitle:'الاستبيان الصحي للمتبرّع',
+    qWeight:'هل يبلغ وزنك 50 كغ أو أكثر؟',
+    qIllness:'هل تعاني من أي أمراض مزمنة أو معدية (أمراض القلب، التهاب الكبد، السكري...)؟',
+    qIllnessDet:'حدّد الحالة (اختياري)',
+    qSurgery:'هل أجريت عملية جراحية أو حجامة/وشمًا خلال آخر 6 أشهر؟',
+    qMeds:'هل تتناول أي أدوية حاليًا؟',
+    qLastDon:'تاريخ آخر تبرع بالدم (اختياري)',
+    yes:'نعم',no:'لا',
+    elig_eligible:'مؤهّل للتبرع',
+    elig_review:'يُنصح باستشارة الطبيب',
+    elig_deferred:'غير مؤهّل حاليًا'
   }
 };
 
@@ -317,6 +350,24 @@ const cardHTML=d=>`
     <button class="btn sec" data-go="#/request/${esc(d.id)}">${t('requestBtn')}</button>
   </div>`;
 
+const ynRow=(name,label,val)=>`<div class="qrow"><span>${label}</span><div class="yn" data-yn="${name}"><button type="button" data-val="true" class="${val?'on':''}">${t('yes')}</button><button type="button" data-val="false" class="${!val?'on':''}">${t('no')}</button><input type="hidden" name="${name}" value="${val?'true':'false'}"></div></div>`;
+
+const healthQuestionsHTML=(p={})=>{
+  const w50=p.weight_over_50!==false;
+  const ill=!!p.has_chronic_illness;
+  const surg=!!p.recent_surgery_or_tattoo;
+  const meds=!!p.taking_medication;
+  return `<div class="qsec">
+    <h4>${t('medTitle')}</h4>
+    ${ynRow('weight_over_50',t('qWeight'),w50)}
+    ${ynRow('has_chronic_illness',t('qIllness'),ill)}
+    <div id="illnessDetailsWrap" class="fld" style="display:${ill?'flex':'none'};margin-top:4px"><label>${t('qIllnessDet')}</label><input name="illness_details" value="${esc(p.illness_details||'')}" placeholder="..."></div>
+    ${ynRow('recent_surgery_or_tattoo',t('qSurgery'),surg)}
+    ${ynRow('taking_medication',t('qMeds'),meds)}
+    <div class="fld" style="margin-top:6px"><label>${t('qLastDon')}</label><input name="last_donation_date" type="date" value="${esc(p.last_donation_date||'')}"></div>
+  </div>`;
+};
+
 /* ---------- Views ---------- */
 const V={
 splash:()=>`<div class="scr splash"><div class="bg"></div>${cells([['torn-tr','top:0;right:0;width:46%'],['torn-bl','bottom:0;left:0;width:60%'],['cell','top:12%;left:-8px;width:62px;transform:rotate(-20deg)'],['cell','top:48%;right:-14px;width:80px'],['cell','bottom:5%;right:6%;width:70px;transform:rotate(30deg)']])}<img class="logo" src="assets/logo.png" alt="BAK"><h2>BAK</h2><p>${t('tag')}</p>${ecg()}<div class="end">${t('end')}</div><div class="pbar"><i></i></div></div>`,
@@ -343,6 +394,7 @@ auth:()=>`<div class="scr"><div class="bg"></div>${cells([['cell','top:16%;right
         <div class="fld"><label>${t('phone')}</label><input name="phone" type="tel" placeholder="+213550000000"></div>
         <div class="fld"><label>${t('birth')}</label><input name="birth_date" type="date"></div>
       </div>
+      ${healthQuestionsHTML({})}
       <label class="chk"><span>${t('isDonorLbl')}</span><input type="checkbox" name="is_donor" checked style="width:20px;height:20px;accent-color:#d6121f"></label>
     `:''}
     <button class="btn" type="submit" ${busy?'disabled':''}>${authTab==='login'?t('submitLogin'):t('submitSignup')}</button>
@@ -384,12 +436,14 @@ search:()=>`<div class="scr"><div class="bg"></div><div class="body">${hd(t('sea
 </div>${nav('search')}</div>`,
 
 profile:()=>{
-  const p=currentProfile||{full_name:currentUser?.email||'BAK',blood_group:'O+',wilaya:t('city'),birth_date:'',avatar:'me',is_donor:true};
+  const p=currentProfile||{full_name:currentUser?.email||'BAK',blood_group:'O+',wilaya:t('city'),birth_date:'',avatar:'me',is_donor:true,eligibility_status:'eligible'};
+  const elig=p.eligibility_status||'eligible';
   return `<div class="scr"><div class="bg"></div>${cells([['cell','top:30%;left:-24px;width:90px'],['cell','top:22%;right:-16px;width:80px;transform:rotate(40deg)']])}<div class="body pf">
     ${hd(t('prof'),`<button data-go="#/edit-profile" aria-label="edit" style="color:#e0212e">${ic('pen')}</button>`)}
     <div class="phw">${ecg('')}<div class="ph"><img src="assets/${esc(p.avatar||'me')}.png" alt=""><button data-go="#/edit-profile" aria-label="photo">${ic('cam')}</button></div></div>
     <h2>${esc(p.full_name)}</h2>
     <p>${p.is_donor?`${t('eng')} ❤️`:t('notDonor')}</p>
+    <div class="elig ${esc(elig)}">${t('elig_'+elig)}</div>
     <div class="info">
       <div><span>${ic('drop','red')}${t('blood')}</span><b>${esc(p.blood_group||'O+')}</b></div>
       <div><span>${ic('pin')}${t('wil')}</span><b>${esc(p.wilaya||t('city'))}</b></div>
@@ -421,6 +475,7 @@ profile:()=>{
         <div class="fld"><label>${t('phone')}</label><input name="phone" type="tel" value="${esc(p.phone||'')}" placeholder="+213550000000"></div>
         <div class="fld"><label>${t('birth')}</label><input name="birth_date" type="date" value="${esc(p.birth_date||'')}"></div>
       </div>
+      ${healthQuestionsHTML(p)}
       <label class="chk"><span>${t('isDonorLbl')}</span><input type="checkbox" name="is_donor" ${p.is_donor!==false?'checked':''} style="width:20px;height:20px;accent-color:#d6121f"></label>
       <button class="btn" type="submit" ${busy?'disabled':''}>${busy?t('saving'):t('save')}</button>
     </form>
@@ -685,6 +740,13 @@ async function initMap(id){
   }
 }
 
+function parseHealthForm(fdObj){
+  if('weight_over_50' in fdObj)fdObj.weight_over_50=fdObj.weight_over_50==='true';
+  if('has_chronic_illness' in fdObj)fdObj.has_chronic_illness=fdObj.has_chronic_illness==='true';
+  if('recent_surgery_or_tattoo' in fdObj)fdObj.recent_surgery_or_tattoo=fdObj.recent_surgery_or_tattoo==='true';
+  if('taking_medication' in fdObj)fdObj.taking_medication=fdObj.taking_medication==='true';
+}
+
 /* ---------- Form Wiring ---------- */
 function bindForms(){
   const af=document.getElementById('authForm');
@@ -693,6 +755,7 @@ function bindForms(){
     if(busy)return;
     const fdObj=Object.fromEntries(new FormData(af).entries());
     fdObj.is_donor=!!af.querySelector('[name="is_donor"]')?.checked;
+    parseHealthForm(fdObj);
     busy=true;authErr='';authOk='';render();
     try{
       const endpoint=authTab==='login'?'/api/auth/login':'/api/auth/signup';
@@ -724,6 +787,7 @@ function bindForms(){
     if(busy)return;
     const fdObj=Object.fromEntries(new FormData(ef).entries());
     fdObj.is_donor=!!ef.querySelector('[name="is_donor"]')?.checked;
+    parseHealthForm(fdObj);
     busy=true;
     try{
       const res=await api('/api/profile',{method:'PUT',body:JSON.stringify(fdObj)});
@@ -831,6 +895,20 @@ async function render(){
 }
 
 document.addEventListener('click',async e=>{
+  const ynBtn=e.target.closest('.yn button');
+  if(ynBtn){
+    const wrap=ynBtn.closest('.yn');
+    const val=ynBtn.dataset.val;
+    const inp=wrap.querySelector('input[type="hidden"]');
+    if(inp)inp.value=val;
+    wrap.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===ynBtn));
+    if(wrap.dataset.yn==='has_chronic_illness'){
+      const det=document.getElementById('illnessDetailsWrap');
+      if(det)det.style.display=val==='true'?'flex':'none';
+    }
+    return;
+  }
+
   const reqBtn=e.target.closest('[data-req]');
   if(reqBtn){
     e.stopPropagation();

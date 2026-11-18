@@ -17,9 +17,25 @@ create table if not exists public.profiles (
   lat double precision not null default 36.7538,
   lng double precision not null default 3.0588,
   notifications_enabled boolean not null default true,
+  weight_over_50 boolean not null default true,
+  has_chronic_illness boolean not null default false,
+  illness_details text default '',
+  recent_surgery_or_tattoo boolean not null default false,
+  taking_medication boolean not null default false,
+  last_donation_date text default '',
+  eligibility_status text not null default 'eligible' check (eligibility_status in ('eligible', 'review', 'deferred')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- If profiles table already exists, run these safe migrations:
+alter table public.profiles add column if not exists weight_over_50 boolean not null default true;
+alter table public.profiles add column if not exists has_chronic_illness boolean not null default false;
+alter table public.profiles add column if not exists illness_details text default '';
+alter table public.profiles add column if not exists recent_surgery_or_tattoo boolean not null default false;
+alter table public.profiles add column if not exists taking_medication boolean not null default false;
+alter table public.profiles add column if not exists last_donation_date text default '';
+alter table public.profiles add column if not exists eligibility_status text not null default 'eligible';
 
 -- 2. Blood Donations (History & Scheduled)
 create table if not exists public.donations (
@@ -125,7 +141,14 @@ begin
     phone,
     is_donor,
     lat,
-    lng
+    lng,
+    weight_over_50,
+    has_chronic_illness,
+    illness_details,
+    recent_surgery_or_tattoo,
+    taking_medication,
+    last_donation_date,
+    eligibility_status
   )
   values (
     new.id,
@@ -137,7 +160,14 @@ begin
     coalesce(new.raw_user_meta_data->>'phone', ''),
     coalesce((new.raw_user_meta_data->>'is_donor')::boolean, true),
     coalesce((new.raw_user_meta_data->>'lat')::double precision, 36.7538),
-    coalesce((new.raw_user_meta_data->>'lng')::double precision, 3.0588)
+    coalesce((new.raw_user_meta_data->>'lng')::double precision, 3.0588),
+    coalesce((new.raw_user_meta_data->>'weight_over_50')::boolean, true),
+    coalesce((new.raw_user_meta_data->>'has_chronic_illness')::boolean, false),
+    coalesce(new.raw_user_meta_data->>'illness_details', ''),
+    coalesce((new.raw_user_meta_data->>'recent_surgery_or_tattoo')::boolean, false),
+    coalesce((new.raw_user_meta_data->>'taking_medication')::boolean, false),
+    coalesce(new.raw_user_meta_data->>'last_donation_date', ''),
+    coalesce(new.raw_user_meta_data->>'eligibility_status', 'eligible')
   )
   on conflict (id) do nothing;
   return new;
