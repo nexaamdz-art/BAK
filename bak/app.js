@@ -411,7 +411,7 @@ auth:()=>`<div class="scr"><div class="bg"></div>${cells([['cell','top:16%;right
 home:()=>{
   const av=currentProfile?esc(currentProfile.avatar||'me'):'me';
   const unread=unreadCount();
-  return `<div class="scr"><div class="bg"></div>${cells([['cells','bottom:10%;right:-50px;width:150px;opacity:.7']])}<div class="body">
+  return `<div class="scr"><div class="bg"></div>${cells([['cells','bottom:76px;inset-inline-end:-56px;width:126px;opacity:.4'],['cell','top:62%;inset-inline-start:-22px;width:48px;opacity:.22;transform:rotate(-18deg)']])}<div class="body">
     <div class="brand">
       <img src="assets/logo.png" alt=""><b>BAK</b>
       <div class="acct">
