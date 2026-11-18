@@ -63,7 +63,7 @@ html.light .hero h3,html.light .hero p{text-shadow:none;color:var(--fg)}
 .body:has(> .learn){display:flex;flex-direction:column}
 .body:has(> .learn) > *{flex-shrink:0}
 .body:has(> .learn) > .btn{margin:6px 0 4px}
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 10px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:28px 0 10px}
 @keyframes tileFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tile{position:relative;aspect-ratio:1/.92;background-size:100% 100%;background-repeat:no-repeat;color:var(--ink);filter:drop-shadow(0 11px 15px rgba(0,0,0,.52)) drop-shadow(0 0 8px rgba(255,230,210,.09));animation:tileFloat 3.8s ease-in-out infinite;transition:transform .18s ease,filter .18s ease}
 .tile:nth-child(2){animation-delay:.7s}
@@ -87,7 +87,7 @@ html[dir=rtl] .learn svg{transform:translateY(-50%) scaleX(-1)}
   .hd{height:46px;margin-bottom:4px}.hd h1{font-size:21px}
   .hero{min-height:212px;padding-bottom:8px}.hero h3{font-size:38px;gap:3px;margin-top:4px}.hero p{font-size:14.5px;margin-top:8px}.hero img{width:39%;top:14px}
   .btn{min-height:46px;height:46px;font-size:18px}
-  .tiles{gap:10px;margin:14px 0 6px}.tile{aspect-ratio:1/.86}.tile span{top:42%;bottom:26%;font-size:16px}
+  .tiles{gap:10px;margin:22px 0 6px}.tile{aspect-ratio:1/.86}.tile span{top:42%;bottom:26%;font-size:16px}
   .learn{height:58px;margin-top:auto;margin-bottom:2px}.learn span{font-size:17px}
   .ph{width:100px;height:100px}.info{margin:6px 0 10px}.stats{margin-bottom:10px}
   .set{margin-top:8px}
