@@ -816,6 +816,45 @@ app.patch('/api/notifications/:id/read', requireAuth, async (req, res) => {
   }
 });
 
+/* ---------- Free OpenStreetMap Geocoding API (No API Key Required) ---------- */
+
+app.get('/api/geocode', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const lang = ['fr', 'en', 'ar'].includes(String(req.query.lang)) ? String(req.query.lang) : 'fr';
+    if (!q || q.length < 2) {
+      return res.status(400).json({ error: 'INVALID_QUERY', results: [] });
+    }
+
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('q', q);
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('limit', '5');
+    url.searchParams.set('countrycodes', 'dz');
+    url.searchParams.set('accept-language', lang);
+
+    const r = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'BAK-BloodDonationApp/1.0 (https://github.com/nexaamdz-art/BAK)',
+      },
+    });
+    if (!r.ok) {
+      return res.status(502).json({ error: 'GEOCODE_FAILED', results: [] });
+    }
+    const items = await r.json();
+    const results = (Array.isArray(items) ? items : []).map((item) => ({
+      name: item.display_name,
+      lat: Number(item.lat),
+      lng: Number(item.lon),
+    })).filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng));
+
+    return res.json({ results });
+  } catch (err) {
+    console.error('Geocode error:', err);
+    return res.status(500).json({ error: 'SERVER_ERROR', results: [] });
+  }
+});
+
 /* ---------- Static Frontend & SPA Fallback ---------- */
 
 app.use(express.static(STATIC_DIR));

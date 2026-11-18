@@ -1,5 +1,3 @@
 /* Configuration BAK
-   - gmapsKey vide  -> carte réelle OpenStreetMap (Leaflet), gratuite, sans clé.
-   - gmapsKey rempli -> carte Google Maps (clé "Maps JavaScript API" requise,
-     à restreindre à votre domaine dans Google Cloud Console). */
-window.BAK_CONFIG={gmapsKey:''};
+   Carte réelle OpenStreetMap (Leaflet) — 100% gratuite, sans clé API ni limite de facturation. */
+window.BAK_CONFIG={mapProvider:'osm'};

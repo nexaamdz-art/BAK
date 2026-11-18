@@ -84,7 +84,9 @@ const I18={
     yes:'Oui',no:'Non',
     elig_eligible:'Éligible au don',
     elig_review:'Avis médical requis',
-    elig_deferred:'Non éligible actuellement'
+    elig_deferred:'Non éligible actuellement',
+    mapSearchPh:'Ville, hôpital, quartier...',
+    mapSearchNone:'Aucun lieu trouvé.'
   },
   en:{
     tag:'Give • Save • Live',end:'Together,<br>to save lives',
@@ -135,7 +137,9 @@ const I18={
     yes:'Yes',no:'No',
     elig_eligible:'Eligible to donate',
     elig_review:'Medical review advised',
-    elig_deferred:'Currently deferred'
+    elig_deferred:'Currently deferred',
+    mapSearchPh:'City, hospital, area...',
+    mapSearchNone:'Place not found.'
   },
   ar:{
     tag:'تبرّع • أنقذ • عِش',end:'معًا،<br>لإنقاذ الأرواح',
@@ -186,7 +190,9 @@ const I18={
     yes:'نعم',no:'لا',
     elig_eligible:'مؤهّل للتبرع',
     elig_review:'يُنصح باستشارة الطبيب',
-    elig_deferred:'غير مؤهّل حاليًا'
+    elig_deferred:'غير مؤهّل حاليًا',
+    mapSearchPh:'مدينة، مستشفى، حي...',
+    mapSearchNone:'لم يتم العثور على الموقع.'
   }
 };
 
@@ -506,9 +512,15 @@ map:(id)=>{
     <div class="mapw">
       <img src="assets/map.jpg" alt="map">
       <div id="map"></div>
+      <form id="mapSearchForm" class="msearch">
+        <input id="mapSearchInput" type="search" placeholder="${t('mapSearchPh')}" autocomplete="off">
+        <button type="submit" aria-label="search">${ic('search')}</button>
+      </form>
       <div class="mctl">
         <button data-mall aria-label="all">${ic('drop')}</button>
         <button data-mme aria-label="locate">${ic('pin')}</button>
+        <button data-mzin aria-label="zoom in" style="font-weight:900;font-size:20px">+</button>
+        <button data-mzout aria-label="zoom out" style="font-weight:900;font-size:20px">−</button>
       </div>
       <div class="mcard">${d?cardHTML(d):`<div style="text-align:center;padding:8px 0">${t('noDonors')}</div>`}</div>
     </div>
@@ -648,60 +660,79 @@ function list(){
     :`<div class="empty">${t('noDonors')}</div>`;
 }
 
-/* ---------- Map Engine (Leaflet / Google Maps) ---------- */
-const CFG=window.BAK_CONFIG||{};
+/* ---------- Free Map Engine (Leaflet + OpenStreetMap, No API Key) ---------- */
 let mapCtl=null;
 const pinSVG=(s,sel)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${Math.round(s*1.25)}" viewBox="0 0 24 30"><path d="M12 1c4 5.2 8 9.6 8 14.2a8 8 0 0 1-16 0C4 10.6 8 6.2 12 1z" fill="#d6121f" stroke="#fff" stroke-width="${sel?1.6:1.2}"/>${sel?'<path d="M12 21s-4.6-2.9-4.6-6.2a2.6 2.6 0 0 1 4.6-1.6 2.6 2.6 0 0 1 4.6 1.6c0 3.3-4.6 6.2-4.6 6.2z" fill="#fff"/>':''}</svg>`;
 const loadScript=(src,css)=>new Promise((ok,ko)=>{if(css){const l=document.createElement('link');l.rel='stylesheet';l.href=css;document.head.appendChild(l)}const s=document.createElement('script');s.src=src;s.async=true;s.onload=ok;s.onerror=ko;document.head.appendChild(s)});
 
+function spreadPositions(pool){
+  const seen={};
+  const coords={};
+  pool.forEach(d=>{
+    const key=`${Number(d.lat).toFixed(3)},${Number(d.lng).toFixed(3)}`;
+    const idx=seen[key]||0;
+    seen[key]=idx+1;
+    if(idx===0){
+      coords[d.id]=[d.lat,d.lng];
+    }else{
+      const angle=(idx*137.5)*Math.PI/180;
+      const radius=0.005*Math.sqrt(idx);
+      coords[d.id]=[d.lat+Math.sin(angle)*radius,d.lng+Math.cos(angle)*radius];
+    }
+  });
+  return coords;
+}
+
 function leafletEngine(el,pool,start,pick){
   const m=L.map(el,{zoomControl:false,attributionControl:false,zoomSnap:.5});
   L.control.attribution({position:'topleft',prefix:false}).addTo(m);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(m);
   const mk={};
+  const pos=spreadPositions(pool);
   const icon=on=>L.divIcon({className:'pin',html:pinSVG(on?42:28,on),iconSize:on?[42,52]:[28,35],iconAnchor:on?[21,52]:[14,35]});
   pool.forEach(d=>{
-    mk[d.id]=L.marker([d.lat,d.lng],{icon:icon(start&&d.id===start.id),zIndexOffset:start&&d.id===start.id?1000:0}).addTo(m);
+    const ll=pos[d.id]||[d.lat,d.lng];
+    mk[d.id]=L.marker(ll,{icon:icon(start&&d.id===start.id),zIndexOffset:start&&d.id===start.id?1000:0}).addTo(m);
+    mk[d.id].bindTooltip(`${d.n} (${d.g})`,{direction:'top',offset:[0,-32]});
     mk[d.id].on('click',()=>pick(d.id));
   });
-  let cur=start?start.id:null,me=null;
-  if(start){m.setView([start.lat,start.lng],12,{animate:false});m.panBy([0,90],{animate:false})}
-  else{m.setView([36.7538,3.0588],6,{animate:false})}
+  let cur=start?start.id:null,me=null,placeMk=null;
+  if(start){
+    const ll=pos[start.id]||[start.lat,start.lng];
+    m.setView(ll,12,{animate:false});
+    m.panBy([0,90],{animate:false});
+  }else{
+    m.setView([36.7538,3.0588],6,{animate:false});
+  }
   return{
     select(d){
       if(cur&&mk[cur]){mk[cur].setIcon(icon(false));mk[cur].setZIndexOffset(0)}
       cur=d.id;
       if(mk[cur]){mk[cur].setIcon(icon(true));mk[cur].setZIndexOffset(1000)}
-      m.setView([d.lat,d.lng],Math.max(m.getZoom(),12),{animate:false});
-      m.panBy([0,90],{animate:false});
+      const ll=pos[d.id]||[d.lat,d.lng];
+      m.setView(ll,Math.max(m.getZoom(),12),{animate:true});
+      m.panBy([0,90],{animate:true});
     },
-    all(){if(pool.length)m.fitBounds(L.latLngBounds(pool.map(d=>[d.lat,d.lng])),{padding:[40,40]})},
-    me(p){if(me)me.remove();me=L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:3,fillColor:'#2a7bff',fillOpacity:1}).addTo(m);m.setView([p.lat,p.lng],13)},
+    all(){
+      if(pool.length){
+        m.fitBounds(L.latLngBounds(pool.map(d=>pos[d.id]||[d.lat,d.lng])),{padding:[48,48]});
+      }
+    },
+    me(p){
+      if(me)me.remove();
+      me=L.circleMarker([p.lat,p.lng],{radius:8,color:'#fff',weight:3,fillColor:'#2a7bff',fillOpacity:1}).addTo(m);
+      m.setView([p.lat,p.lng],13);
+    },
+    focus(p,label){
+      if(placeMk)placeMk.remove();
+      placeMk=L.circleMarker([p.lat,p.lng],{radius:7,color:'#fff',weight:2.5,fillColor:'#e0212e',fillOpacity:.9}).addTo(m);
+      if(label)placeMk.bindTooltip(label,{permanent:false,direction:'top'}).openTooltip();
+      m.setView([p.lat,p.lng],13,{animate:true});
+      m.panBy([0,60],{animate:true});
+    },
+    zoomIn(){m.zoomIn()},
+    zoomOut(){m.zoomOut()},
     destroy(){m.remove()}
-  };
-}
-
-function googleEngine(el,pool,start,pick){
-  const g=google.maps;
-  const center=start?{lat:start.lat,lng:start.lng}:{lat:36.7538,lng:3.0588};
-  const m=new g.Map(el,{center,zoom:start?12:6,disableDefaultUI:true,gestureHandling:'greedy'});
-  const gi=on=>({url:'data:image/svg+xml;utf8,'+encodeURIComponent(pinSVG(on?42:28,on)),scaledSize:new g.Size(on?42:28,on?52:35),anchor:new g.Point(on?21:14,on?52:35)});
-  const mk={};let cur=start?start.id:null,me=null;
-  pool.forEach(d=>{
-    mk[d.id]=new g.Marker({position:{lat:d.lat,lng:d.lng},map:m,icon:gi(start&&d.id===start.id),title:d.n,zIndex:start&&d.id===start.id?1000:1});
-    mk[d.id].addListener('click',()=>pick(d.id));
-  });
-  if(start)m.panBy(0,-90);
-  return{
-    select(d){
-      if(cur&&mk[cur]){mk[cur].setIcon(gi(false));mk[cur].setZIndex(1)}
-      cur=d.id;
-      if(mk[cur]){mk[cur].setIcon(gi(true));mk[cur].setZIndex(1000)}
-      m.panTo({lat:d.lat,lng:d.lng});m.panBy(0,-90);
-    },
-    all(){if(!pool.length)return;const b=new g.LatLngBounds();pool.forEach(d=>b.extend({lat:d.lat,lng:d.lng}));m.fitBounds(b,40)},
-    me(p){if(me)me.setMap(null);me=new g.Marker({position:p,map:m,icon:{path:g.SymbolPath.CIRCLE,scale:8,fillColor:'#2a7bff',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});m.setCenter(p);m.setZoom(13)},
-    destroy(){}
   };
 }
 
@@ -719,12 +750,17 @@ async function initMap(id){
     if(c)c.innerHTML=cardHTML(d);
   };
   try{
-    let eng;
-    if(CFG.gmapsKey){if(!(window.google&&window.google.maps))await loadScript('https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(CFG.gmapsKey)+'&language='+lang);eng=googleEngine}
-    else{if(!window.L)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js','https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css');eng=leafletEngine}
+    if(!window.L){
+      await loadScript(
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'
+      );
+    }
     if(document.getElementById('map')!==el)return;
-    mapCtl=eng(el,pool,start,pick);
+    mapCtl=leafletEngine(el,pool,start,pick);
     const mall=document.querySelector('[data-mall]');if(mall)mall.onclick=()=>mapCtl&&mapCtl.all();
+    const mzin=document.querySelector('[data-mzin]');if(mzin)mzin.onclick=()=>mapCtl&&mapCtl.zoomIn();
+    const mzout=document.querySelector('[data-mzout]');if(mzout)mzout.onclick=()=>mapCtl&&mapCtl.zoomOut();
     const mme=document.querySelector('[data-mme]');
     if(mme)mme.onclick=()=>{
       if(!navigator.geolocation)return toast();
@@ -734,9 +770,27 @@ async function initMap(id){
         await loadDonors();
       },()=>toast(),{timeout:8000});
     };
+    const msf=document.getElementById('mapSearchForm');
+    if(msf)msf.onsubmit=async e=>{
+      e.preventDefault();
+      const inp=document.getElementById('mapSearchInput');
+      const query=(inp&&inp.value||'').trim();
+      if(query.length<2)return;
+      try{
+        const res=await api(`/api/geocode?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`);
+        const hit=res.results&&res.results[0];
+        if(hit&&mapCtl){
+          mapCtl.focus({lat:hit.lat,lng:hit.lng},hit.name.split(',')[0]);
+        }else{
+          toast(t('mapSearchNone'));
+        }
+      }catch(_err){
+        toast(t('mapSearchNone'));
+      }
+    };
   }catch(_e){
     el.remove();
-    document.querySelectorAll('.mctl').forEach(x=>x.remove());
+    document.querySelectorAll('.mctl,.msearch').forEach(x=>x.remove());
   }
 }
 
@@ -848,6 +902,8 @@ function bindForms(){
 
 /* ---------- Router & Render ---------- */
 let timer;
+const navStack=[];
+let goingBack=false;
 const PROTECTED=new Set(['profile','edit-profile','donations','donate','notifications','request']);
 
 async function render(){
@@ -864,6 +920,14 @@ async function render(){
   if(PROTECTED.has(r)&&!currentUser){
     requireLogin('#/'+h);
     return;
+  }
+
+  if(r!=='splash'){
+    const cur='#/'+h;
+    if(!goingBack&&navStack[navStack.length-1]!==cur){
+      navStack.push(cur);
+    }
+    goingBack=false;
   }
 
   const f=V[r]||V.home;
@@ -923,7 +987,10 @@ document.addEventListener('click',async e=>{
   if(x.dataset.go){
     location.hash=x.dataset.go;
   }else if('back' in x.dataset){
-    history.length>1?history.back():location.hash='#/home';
+    if(navStack.length>0)navStack.pop();
+    const prev=navStack[navStack.length-1]||'#/home';
+    goingBack=true;
+    location.hash=prev;
   }else if(x.dataset.g){
     grp=x.dataset.g;render();
   }else if(x.dataset.w){
