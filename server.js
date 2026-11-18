@@ -866,6 +866,10 @@ app.use((req, res) => {
   res.sendFile(path.join(STATIC_DIR, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`BAK server listening on http://0.0.0.0:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`BAK server listening on http://0.0.0.0:${PORT}`);
+  });
+}
+
+module.exports = app;
