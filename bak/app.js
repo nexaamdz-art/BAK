@@ -338,7 +338,7 @@ const DROP='<path d="M12 2.5c3.5 4.6 6 7.8 6 11a6 6 0 0 1-12 0c0-3.2 2.5-6.4 6-1
 const ic=(n,c='')=>n==='infof'?`<svg class="i ${c}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 11v5M12 8h.01" stroke="#f6dcd2" stroke-width="2.2"/></svg>`:n==='drop'?`<svg class="i f ${c}" viewBox="0 0 24 24">${DROP}</svg>`:n==='heartf'?`<svg class="i f ${c}" viewBox="0 0 24 24">${P.heart}</svg>`:`<svg class="i ${c}" viewBox="0 0 24 24">${P[n]}</svg>`;
 const ecg=c=>`<svg class="ecg ${c||''}" viewBox="0 0 300 40" preserveAspectRatio="none"><path d="M0 20H95l8-4 6 4h10l8-18 10 36 8-18h14l6-4 8 4H300" fill="none" stroke="#e0212e" stroke-width="1.6"/></svg>`;
 const fd=s=>{try{return new Date(s).toLocaleDateString(lang==='ar'?'ar-DZ-u-nu-latn':lang,{day:'numeric',month:'long',year:'numeric'}).replace(/(^|\s)(\p{L})/gu,(m,a,c)=>a+c.toUpperCase())}catch(_e){return esc(s)}};
-const cells=(a)=>a.map(([f,s])=>`<img class="cl" src="assets/${f}.png" alt="" style="${s}">`).join('');
+const cells=(a)=>a.map(([f,s])=>`<img class="cl" src="assets/${f}.webp" alt="" style="${s}">`).join('');
 const hd=(title,right='')=>`<div class="hd"><button data-back aria-label="back">${ic('back','bk')}</button><h1>${title}</h1>${right||'<span></span>'}</div>`;
 const nav=(a)=>`<nav>${[['home','#/home','home',t('home')],['search','#/search','search',t('search')],['don','#/donations','heart',t('mine')],['set','#/settings',a==='prof'?'user':'gear',t('set')]].map(([k,h,i,l])=>`<button data-go="${h}" class="${(a===k||(a==='prof'&&k==='set'))?'on':''}">${ic(i)}<span>${l}</span></button>`).join('')}</nav>`;
 
@@ -459,7 +459,7 @@ function requireLogin(targetRoute){
 /* ---------- Card & List Helpers ---------- */
 const cardHTML=d=>`
   <div class="top">
-    <span class="av"><img src="assets/${esc(d.a||'av1')}.png" alt=""></span>
+    <span class="av"><img src="assets/${esc(d.a||'av1')}.webp" alt=""></span>
     <div class="inf"><b>${esc(d.n||'')}</b><span class="meta">${ic('drop','red')}<em>${esc(d.g||'')}</em><small>${esc(d.w||'')}</small></span></div>
     <span class="dist" style="position:static">${ic('pin')}${Number.isFinite(d.d)?d.d:0} km</span>
   </div>
@@ -492,7 +492,7 @@ const healthQuestionsHTML=(p={})=>{
 
 /* ---------- Views ---------- */
 const V={
-splash:()=>`<div class="scr splash"><div class="bg"></div>${cells([['torn-tr','top:0;right:0;width:46%'],['torn-bl','bottom:0;left:0;width:60%'],['cell','top:12%;left:-8px;width:62px;transform:rotate(-20deg)'],['cell','top:48%;right:-14px;width:80px'],['cell','bottom:5%;right:6%;width:70px;transform:rotate(30deg)']])}<img class="logo" src="assets/logo.png" alt="BAK"><h2>BAK</h2><p>${t('tag')}</p>${ecg()}<div class="end">${t('end')}</div><div class="pbar"><i></i></div></div>`,
+splash:()=>`<div class="scr splash"><div class="bg"></div>${cells([['torn-tr','top:0;right:0;width:46%'],['torn-bl','bottom:0;left:0;width:60%'],['cell','top:12%;left:-8px;width:62px;transform:rotate(-20deg)'],['cell','top:48%;right:-14px;width:80px'],['cell','bottom:5%;right:6%;width:70px;transform:rotate(30deg)']])}<img class="logo" src="assets/logo.webp" alt="BAK"><h2>BAK</h2><p>${t('tag')}</p>${ecg()}<div class="end">${t('end')}</div><div class="pbar"><i></i></div></div>`,
 
 auth:()=>`<div class="scr"><div class="bg"></div>${cells([['cell','top:16%;right:-18px;width:72px'],['cell','bottom:14%;left:-18px;width:72px']])}<div class="body">${hd(authTab==='login'?t('loginTab'):t('signupTab'))}
   <div class="tabs">
@@ -529,19 +529,19 @@ home:()=>{
   const unread=unreadCount();
   return `<div class="scr"><div class="bg"></div>${cells([['cells','bottom:76px;inset-inline-end:-56px;width:126px;opacity:.4'],['cell','top:62%;inset-inline-start:-22px;width:48px;opacity:.22;transform:rotate(-18deg)']])}<div class="body">
     <div class="brand">
-      <img src="assets/logo.png" alt=""><b>BAK</b>
+      <img src="assets/logo.webp" alt=""><b>BAK</b>
       <div class="acct">
         ${currentUser
-          ?`<button class="avbtn" data-go="#/profile" aria-label="profile"><img src="assets/${av}.png" alt=""></button>`
+          ?`<button class="avbtn" data-go="#/profile" aria-label="profile"><img src="assets/${av}.webp" alt=""></button>`
           :`<button class="loginpill" data-go="#/auth">${ic('user')}<span>${t('loginBtn')}</span></button>`}
         <button aria-label="notifications" data-go="#/notifications">${ic('bell')}${unread>0?'<i></i>':''}</button>
       </div>
     </div>
-    <div class="hero">${ecg()}<img src="assets/drop-hand.png" alt=""><h3><span>${t('h1')}</span><span>${t('h2')}</span><span>${t('h3')}</span></h3><p>${t('sub')}</p></div>
+    <div class="hero">${ecg()}<img src="assets/drop-hand.webp" alt=""><h3><span>${t('h1')}</span><span>${t('h2')}</span><span>${t('h3')}</span></h3><p>${t('sub')}</p></div>
     <button class="btn" data-go="#/donate">${ic('drop')}<span>${t('donate')}</span>${ic('chev','chev')}</button>
     <div class="tiles">
-      <button class="tile" data-go="#/map" style="background-image:url(assets/tile-find.png)"><span>${t('find')}</span></button>
-      <button class="tile" data-go="${currentUser?'#/profile':'#/auth/signup'}" style="background-image:url(assets/tile-join.png)"><span>${t('join')}</span></button>
+      <button class="tile" data-go="#/map" style="background-image:url(assets/tile-find.webp)"><span>${t('find')}</span></button>
+      <button class="tile" data-go="${currentUser?'#/profile':'#/auth/signup'}" style="background-image:url(assets/tile-join.webp)"><span>${t('join')}</span></button>
     </div>
     <button class="learn" data-go="#/learn"><span>${t('learn')}</span>${ic('chev','chev')}</button>
   </div>${nav('home')}</div>`;
@@ -562,7 +562,7 @@ profile:()=>{
   const elig=p.eligibility_status||'eligible';
   return `<div class="scr"><div class="bg"></div>${cells([['cell','top:30%;left:-24px;width:90px'],['cell','top:22%;right:-16px;width:80px;transform:rotate(40deg)']])}<div class="body pf">
     ${hd(t('prof'),`<button data-go="#/edit-profile" aria-label="edit" style="color:#e0212e">${ic('pen')}</button>`)}
-    <div class="phw">${ecg('')}<div class="ph"><img src="assets/${esc(p.avatar||'me')}.png" alt=""><button data-go="#/edit-profile" aria-label="photo">${ic('cam')}</button></div></div>
+    <div class="phw">${ecg('')}<div class="ph"><img src="assets/${esc(p.avatar||'me')}.webp" alt=""><button data-go="#/edit-profile" aria-label="photo">${ic('cam')}</button></div></div>
     <h2>${esc(p.full_name)}</h2>
     <p>${p.is_donor?`${t('eng')} ❤️`:t('notDonor')}</p>
     <div class="elig ${esc(elig)}">${t('elig_'+elig)}</div>
@@ -586,7 +586,7 @@ profile:()=>{
   return `<div class="scr"><div class="bg"></div><div class="body">${hd(t('edit'))}
     <form id="editProfileForm" class="fcard">
       <div class="fld"><label>${t('chooseAv')}</label></div>
-      <div class="avpick">${AVATARS.map(av=>`<button type="button" data-av="${av}" class="${(p.avatar||'me')===av?'on':''}"><img src="assets/${av}.png" alt="${av}"></button>`).join('')}</div>
+      <div class="avpick">${AVATARS.map(av=>`<button type="button" data-av="${av}" class="${(p.avatar||'me')===av?'on':''}"><img src="assets/${av}.webp" alt="${av}"></button>`).join('')}</div>
       <input type="hidden" name="avatar" value="${esc(p.avatar||'me')}">
       <div class="fld"><label>${t('fullName')}</label><input name="full_name" required value="${esc(p.full_name)}"></div>
       <div class="fgrid">
@@ -626,7 +626,7 @@ map:(id)=>{
   return `<div class="scr"><div class="bg"></div><div class="body" style="display:flex;flex-direction:column">
     ${hd(t('findT'),`<button data-cyclegrp aria-label="filter" title="${esc(grp)}">${ic('filter')}</button>`)}
     <div class="mapw">
-      <img src="assets/map.jpg" alt="map">
+      <img src="assets/map.webp" alt="map">
       <div id="map"></div>
       <form id="mapSearchForm" class="msearch">
         <input id="mapSearchInput" type="search" placeholder="${t('mapSearchPh')}" autocomplete="off">
@@ -693,7 +693,7 @@ donate:()=>{
   </div>${nav('don')}</div>`;
 },
 
-thanks:()=>`<div class="scr thx"><div class="bg"></div>${cells([['cell','top:6%;left:-14px;width:76px;transform:rotate(-25deg)'],['cell','bottom:12%;right:-18px;width:86px']])}<img class="bag" src="assets/bag.png" alt=""><div class="ring">${ic('check')}</div><h2>${t('thx')}</h2><p>${t('thxT')}</p><div class="hr">${ecg()}${ic('heart')}</div><div class="q">${t('tog')}</div><button class="btn" data-go="#/donations"><span>${t('viewDonations')}</span>${ic('chev','chev')}</button><button class="linkbtn" style="position:absolute;bottom:8px" data-go="#/home">${t('back')}</button></div>`,
+thanks:()=>`<div class="scr thx"><div class="bg"></div>${cells([['cell','top:6%;left:-14px;width:76px;transform:rotate(-25deg)'],['cell','bottom:12%;right:-18px;width:86px']])}<img class="bag" src="assets/bag.webp" alt=""><div class="ring">${ic('check')}</div><h2>${t('thx')}</h2><p>${t('thxT')}</p><div class="hr">${ecg()}${ic('heart')}</div><div class="q">${t('tog')}</div><button class="btn" data-go="#/donations"><span>${t('viewDonations')}</span>${ic('chev','chev')}</button><button class="linkbtn" style="position:absolute;bottom:8px" data-go="#/home">${t('back')}</button></div>`,
 
 donations:()=>{
   const completed=donationsList.filter(x=>x.status==='completed');
@@ -763,7 +763,7 @@ help:()=>`<div class="scr"><div class="bg"></div><div class="body">${hd(t('helpT
 
 about:()=>`<div class="scr"><div class="bg"></div><div class="body">${hd(t('aboutTitle'))}
   <div class="fcard" style="text-align:center">
-    <img src="assets/logo.png" alt="BAK" style="width:88px;margin-bottom:8px">
+    <img src="assets/logo.webp" alt="BAK" style="width:88px;margin-bottom:8px">
     <h3>BAK — ${t('tag')}</h3>
     <p class="sub">${t('sub')}</p>
     <button class="btn" data-go="#/home">${t('back')}</button>
@@ -782,7 +782,7 @@ function list(){
     return okGrp&&okW&&okQ;
   });
   el.innerHTML=r.length
-    ?r.map(d=>`<div class="row" data-go="#/map/${esc(d.id)}"><span class="av"><img src="assets/${esc(d.a)}.png" alt=""><i></i></span><div class="inf"><b>${esc(d.n)}</b><span class="meta">${ic('drop','red')}<em>${esc(d.g)}</em><small>${esc(d.w)}</small></span></div><span class="dist">${ic('pin')}${d.d} km</span><button class="plus" data-req="${esc(d.id)}" aria-label="+">${ic('plus')}</button></div>`).join('')
+    ?r.map(d=>`<div class="row" data-go="#/map/${esc(d.id)}"><span class="av"><img src="assets/${esc(d.a)}.webp" alt=""><i></i></span><div class="inf"><b>${esc(d.n)}</b><span class="meta">${ic('drop','red')}<em>${esc(d.g)}</em><small>${esc(d.w)}</small></span></div><span class="dist">${ic('pin')}${d.d} km</span><button class="plus" data-req="${esc(d.id)}" aria-label="+">${ic('plus')}</button></div>`).join('')
     :`<div class="empty">${t('noDonors')}</div>`;
 }
 
@@ -1048,11 +1048,11 @@ function bindForms(){
 
 /* ---------- Real Asset Preloader ---------- */
 const PRELOAD_ASSETS=[
-  'assets/logo.png','assets/torn-tr.png','assets/torn-bl.png','assets/cell.png','assets/cells.png',
-  'assets/drop-hand.png','assets/tile-find.png','assets/tile-join.png','assets/bar-learn.png',
-  'assets/paper.png','assets/paper-wide.png','assets/paper-lines2.png','assets/paper-lines3.png',
-  'assets/paper-tall-lines.png','assets/bar.png','assets/bag.png','assets/map.jpg',
-  'assets/me.png','assets/av1.png','assets/av2.png','assets/av3.png','assets/av4.png','assets/av5.png'
+  'assets/logo.webp','assets/torn-tr.webp','assets/torn-bl.webp','assets/cell.webp','assets/cells.webp',
+  'assets/drop-hand.webp','assets/tile-find.webp','assets/tile-join.webp','assets/bar-learn.webp',
+  'assets/paper.webp','assets/paper-wide.webp','assets/paper-lines2.webp','assets/paper-lines3.webp',
+  'assets/paper-tall-lines.webp','assets/bar.webp','assets/bag.webp','assets/map.webp',
+  'assets/me.webp','assets/av1.webp','assets/av2.webp','assets/av3.webp','assets/av4.webp','assets/av5.webp'
 ];
 const preloadedImgs=[];
 let preloadPct=4;
@@ -1069,13 +1069,14 @@ function setSplashBar(pct){
 function loadImgAsset(src){
   return new Promise(resolve=>{
     const img=new Image();
+    img.decoding='async';
     let settled=false;
     const finish=()=>{
       if(settled)return;
       settled=true;
       resolve();
     };
-    const tOut=setTimeout(finish,12000);
+    const tOut=setTimeout(finish,5000);
     const doneOk=()=>{
       clearTimeout(tOut);
       if(typeof img.decode==='function'){

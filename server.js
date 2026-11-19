@@ -1241,6 +1241,7 @@ app.get('/api/health', (_req, res) => {
 
 /* ---------- Static Frontend & SPA Fallback ---------- */
 
+app.use('/assets', express.static(path.join(STATIC_DIR, 'assets'), { maxAge: '7d' }));
 app.use(express.static(STATIC_DIR));
 
 app.use((req, res) => {
