@@ -59,6 +59,7 @@ nav button.on::after{content:"";position:absolute;bottom:-5px;width:30px;height:
 html.light .hero h3,html.light .hero p{text-shadow:none;color:var(--fg)}
 .hero img{position:absolute;inset-inline-end:-10px;top:18px;width:41%;max-width:162px;z-index:1;pointer-events:none}
 .hero .ecg{position:absolute;inset-inline-end:0;top:72px;width:68%;opacity:.55;z-index:0;pointer-events:none}
+html[dir=rtl] .hero img,html[dir=rtl] .hero .ecg{transform:scaleX(-1)}
 .body:has(> .learn){display:flex;flex-direction:column}
 .body:has(> .learn) > *{flex-shrink:0}
 .body:has(> .learn) > .btn{margin:auto 0 6px}
