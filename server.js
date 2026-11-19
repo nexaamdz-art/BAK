@@ -82,8 +82,13 @@ const WILAYA_COORDS_NORM = Object.fromEntries(
   ])
 );
 
+const isAiStudio = Boolean(process.env.APPLET_ID || process.env.GOOGLE_RUNTIME || process.env.CSP_HEADER_VALUE);
+
 app.use(
   helmet({
+    xFrameOptions: isAiStudio ? false : undefined,
+    crossOriginOpenerPolicy: isAiStudio ? false : undefined,
+    crossOriginResourcePolicy: isAiStudio ? false : undefined,
     contentSecurityPolicy: {
       useDefaults: false,
       directives: {
@@ -93,7 +98,15 @@ app.use(
         fontSrc: ['https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https://*.tile.openstreetmap.org'],
         connectSrc: ["'self'"],
-        frameAncestors: ["'none'"],
+        frameAncestors: isAiStudio
+          ? [
+              "'self'",
+              'https://aistudio.google.com',
+              'https://*.google.com',
+              'https://*.googleusercontent.com',
+              'https://*.usercontent.goog',
+            ]
+          : ["'none'"],
         objectSrc: ["'none'"],
       },
     },
@@ -243,7 +256,8 @@ function extractToken(req) {
 function setAuthCookies(res, req, session) {
   if (!session || !session.access_token) return;
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  const common = `HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+  const sameSite = isAiStudio && isHttps ? 'SameSite=None; Secure' : `SameSite=Lax${isHttps ? '; Secure' : ''}`;
+  const common = `HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; ${sameSite}`;
   res.setHeader('Set-Cookie', [
     `bak_access_token=${encodeURIComponent(session.access_token)}; ${common}`,
     `bak_refresh_token=${encodeURIComponent(session.refresh_token || '')}; ${common}`,
@@ -252,7 +266,8 @@ function setAuthCookies(res, req, session) {
 
 function clearAuthCookies(res, req) {
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  const common = `HttpOnly; Path=/; Max-Age=0; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+  const sameSite = isAiStudio && isHttps ? 'SameSite=None; Secure' : `SameSite=Lax${isHttps ? '; Secure' : ''}`;
+  const common = `HttpOnly; Path=/; Max-Age=0; ${sameSite}`;
   res.setHeader('Set-Cookie', [
     `bak_access_token=; ${common}`,
     `bak_refresh_token=; ${common}`,
