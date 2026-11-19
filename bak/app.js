@@ -789,7 +789,10 @@ function list(){
 /* ---------- Free Map Engine (Leaflet + OpenStreetMap, No API Key) ---------- */
 let mapCtl=null;
 const pinSVG=(s,sel)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${Math.round(s*1.25)}" viewBox="0 0 24 30"><path d="M12 1c4 5.2 8 9.6 8 14.2a8 8 0 0 1-16 0C4 10.6 8 6.2 12 1z" fill="#d6121f" stroke="#fff" stroke-width="${sel?1.6:1.2}"/>${sel?'<path d="M12 21s-4.6-2.9-4.6-6.2a2.6 2.6 0 0 1 4.6-1.6 2.6 2.6 0 0 1 4.6 1.6c0 3.3-4.6 6.2-4.6 6.2z" fill="#fff"/>':''}</svg>`;
-const loadScript=(src,css)=>new Promise((ok,ko)=>{if(css){const l=document.createElement('link');l.rel='stylesheet';l.href=css;document.head.appendChild(l)}const s=document.createElement('script');s.src=src;s.async=true;s.onload=ok;s.onerror=ko;document.head.appendChild(s)});
+const loadScript=(src,css)=>Promise.all([
+  css?new Promise(r=>{const l=document.createElement('link');l.rel='stylesheet';l.href=css;l.onload=r;l.onerror=r;document.head.appendChild(l)}):Promise.resolve(),
+  new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=ok;s.onerror=ko;document.head.appendChild(s)})
+]);
 
 function spreadPositions(pool){
   const seen={};
@@ -830,6 +833,7 @@ function leafletEngine(el,pool,start,pick){
   }else{
     m.setView([36.7538,3.0588],6,{animate:false});
   }
+  setTimeout(()=>{try{m.invalidateSize()}catch(_e){}},160);
   return{
     select(d){
       if(cur&&mk[cur]){mk[cur].setIcon(icon(false));mk[cur].setZIndexOffset(0)}
@@ -842,6 +846,8 @@ function leafletEngine(el,pool,start,pick){
     all(){
       if(pool.length){
         m.fitBounds(L.latLngBounds(pool.map(d=>pos[d.id]||[d.lat,d.lng])),{padding:[48,48]});
+      }else{
+        m.setView([36.7538,3.0588],6,{animate:true});
       }
     },
     me(p){
