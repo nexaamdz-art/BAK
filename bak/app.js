@@ -1339,6 +1339,10 @@ addEventListener('hashchange',render);
       authErr=ed;
       history.replaceState(null,'',location.pathname+location.search+'#/auth');
     }
+  }else{
+    if(!location.hash||location.hash==='#'||location.hash==='#/'||location.hash==='#/home'){
+      history.replaceState(null,'',location.pathname+location.search+'#/splash');
+    }
   }
   authPromise=hydrateAuth().catch(()=>false);
   loadDonors().catch(()=>{});
