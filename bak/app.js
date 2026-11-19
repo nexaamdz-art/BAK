@@ -903,6 +903,72 @@ function bindForms(){
   };
 }
 
+/* ---------- Real Asset Preloader ---------- */
+const PRELOAD_ASSETS=[
+  'assets/logo.png','assets/torn-tr.png','assets/torn-bl.png','assets/cell.png','assets/cells.png',
+  'assets/drop-hand.png','assets/tile-find.png','assets/tile-join.png','assets/bar-learn.png',
+  'assets/paper.png','assets/paper-wide.png','assets/paper-lines2.png','assets/paper-lines3.png',
+  'assets/paper-tall-lines.png','assets/bar.png','assets/bag.png','assets/map.jpg',
+  'assets/me.png','assets/av1.png','assets/av2.png','assets/av3.png','assets/av4.png','assets/av5.png'
+];
+const preloadedImgs=[];
+let preloadPct=4;
+let preloadDone=false;
+let preloadPromise=null;
+let authPromise=null;
+
+function setSplashBar(pct){
+  preloadPct=pct;
+  const bar=document.querySelector('.splash .pbar i');
+  if(bar)bar.style.width=pct+'%';
+}
+
+function loadImgAsset(src){
+  return new Promise(resolve=>{
+    const img=new Image();
+    let settled=false;
+    const finish=()=>{
+      if(settled)return;
+      settled=true;
+      resolve();
+    };
+    const tOut=setTimeout(finish,12000);
+    const doneOk=()=>{
+      clearTimeout(tOut);
+      if(typeof img.decode==='function'){
+        img.decode().catch(()=>{}).finally(finish);
+      }else{
+        finish();
+      }
+    };
+    img.onload=doneOk;
+    img.onerror=()=>{clearTimeout(tOut);finish()};
+    img.src=src;
+    preloadedImgs.push(img);
+    if(img.complete&&img.naturalWidth>0)doneOk();
+  });
+}
+
+function startPreload(){
+  if(preloadPromise)return preloadPromise;
+  const total=PRELOAD_ASSETS.length+1;
+  let completed=0;
+  const bump=()=>{
+    completed++;
+    setSplashBar(Math.max(4,Math.min(100,Math.round((completed/total)*100))));
+  };
+  const imgTasks=PRELOAD_ASSETS.map(src=>loadImgAsset(src).then(bump));
+  const fontsReady=document.fonts&&document.fonts.ready
+    ?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))])
+    :Promise.resolve();
+  const initTask=Promise.all([authPromise||Promise.resolve(),fontsReady]).then(bump);
+  preloadPromise=Promise.all([...imgTasks,initTask]).then(()=>{
+    preloadDone=true;
+    setSplashBar(100);
+  });
+  return preloadPromise;
+}
+
 /* ---------- Router & Render ---------- */
 let timer;
 const navStack=[];
@@ -955,9 +1021,15 @@ async function render(){
     loadNotifications().then(()=>{if(location.hash.startsWith('#/notifications')){app.innerHTML=V.notifications();bindForms()}}).catch(()=>{});
   }
   if(r==='splash'){
-    timer=setTimeout(()=>{
-      location.replace(currentUser?'#/home':'#/auth');
-    },2200);
+    setSplashBar(preloadDone?100:preloadPct);
+    startPreload().then(()=>{
+      timer=setTimeout(()=>{
+        const curH=location.hash.replace('#/','')||'splash';
+        if(curH==='splash'){
+          location.replace(currentUser?'#/home':'#/auth');
+        }
+      },240);
+    });
   }
 }
 
@@ -1068,9 +1140,16 @@ addEventListener('hashchange',render);
       history.replaceState(null,'',location.pathname+location.search+'#/auth');
     }
   }
-  await hydrateAuth();
+  authPromise=hydrateAuth().catch(()=>false);
   loadDonors().catch(()=>{});
-  render();
+  const initH=location.hash.replace('#/','')||'splash';
+  if(initH==='splash'){
+    render();
+  }else{
+    startPreload();
+    await authPromise;
+    render();
+  }
 })();
 
 if('serviceWorker' in navigator&&/^https:|localhost/.test(location.protocol+location.hostname)){
