@@ -28,26 +28,69 @@ const WILAYA_COORDS = {
 
 app.use(express.json({ limit: '1mb' }));
 
+function cleanEnvVal(v) {
+  if (!v || typeof v !== 'string') return '';
+  return v.trim().replace(/^['"]|['"]$/g, '').trim();
+}
+
+function findEnvCaseInsensitive(names) {
+  const targetNames = names.map((n) => n.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  for (const [key, val] of Object.entries(process.env)) {
+    const norm = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (targetNames.includes(norm)) {
+      const cleaned = cleanEnvVal(val);
+      if (cleaned) return cleaned;
+    }
+  }
+  return '';
+}
+
+function readBakConfigFile() {
+  try {
+    const fs = require('fs');
+    const p = path.join(STATIC_DIR, 'config.js');
+    if (fs.existsSync(p)) {
+      const txt = fs.readFileSync(p, 'utf8');
+      const mUrl = txt.match(/supabaseUrl\s*:\s*['"]([^'"]+)['"]/i);
+      const mKey = txt.match(/supabaseAnonKey\s*:\s*['"]([^'"]+)['"]/i);
+      return {
+        url: mUrl ? cleanEnvVal(mUrl[1]) : '',
+        key: mKey ? cleanEnvVal(mKey[1]) : '',
+      };
+    }
+  } catch (_e) {}
+  return { url: '', key: '' };
+}
+
 function getSupabaseUrl() {
-  return (
-    process.env.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    ''
-  ).trim();
+  const envVal = findEnvCaseInsensitive([
+    'SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'VITE_SUPABASE_URL',
+    'SUPABASE_PROJECT_URL',
+    'PUBLIC_SUPABASE_URL',
+    'REACT_APP_SUPABASE_URL',
+  ]);
+  if (envVal) return envVal;
+  return readBakConfigFile().url;
 }
 
 function getSupabaseKey() {
-  return (
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_KEY ||
-    ''
-  ).trim();
+  const envVal = findEnvCaseInsensitive([
+    'SUPABASE_ANON_KEY',
+    'SUPABASE_KEY',
+    'SUPABASE_PUBLISHABLE_KEY',
+    'SUPABASE_PUBLISHABLE_DEFAULT_KEY',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_SUPABASE_KEY',
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
+    'VITE_SUPABASE_ANON_KEY',
+    'PUBLIC_SUPABASE_ANON_KEY',
+    'REACT_APP_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+  ]);
+  if (envVal) return envVal;
+  return readBakConfigFile().key;
 }
 
 function isSupabaseConfigured() {
@@ -884,11 +927,15 @@ app.get('/api/geocode', async (req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
+  const customEnvKeys = Object.keys(process.env).filter(
+    (k) => !/^(AWS_|VERCEL_|NODE_|_|PATH|HOME|PWD|npm_|TERM|LANG|SHELL|HOSTNAME|PORT|SHLVL)/i.test(k)
+  );
   res.json({
     ok: true,
     supabaseConfigured: isSupabaseConfigured(),
     hasUrl: Boolean(getSupabaseUrl()),
     hasKey: Boolean(getSupabaseKey()),
+    customEnvKeys,
   });
 });
 
