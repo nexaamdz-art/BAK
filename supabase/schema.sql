@@ -17,6 +17,8 @@ create table if not exists public.profiles (
   lat double precision not null default 36.7538,
   lng double precision not null default 3.0588,
   notifications_enabled boolean not null default true,
+  gender text not null default 'male' check (gender in ('male', 'female')),
+  pregnant_or_breastfeeding boolean not null default false,
   weight_over_50 boolean not null default true,
   has_chronic_illness boolean not null default false,
   illness_details text default '',
@@ -29,6 +31,8 @@ create table if not exists public.profiles (
 );
 
 -- If profiles table already exists, run these safe migrations:
+alter table public.profiles add column if not exists gender text not null default 'male';
+alter table public.profiles add column if not exists pregnant_or_breastfeeding boolean not null default false;
 alter table public.profiles add column if not exists weight_over_50 boolean not null default true;
 alter table public.profiles add column if not exists has_chronic_illness boolean not null default false;
 alter table public.profiles add column if not exists illness_details text default '';
@@ -142,6 +146,8 @@ begin
     is_donor,
     lat,
     lng,
+    gender,
+    pregnant_or_breastfeeding,
     weight_over_50,
     has_chronic_illness,
     illness_details,
@@ -161,6 +167,8 @@ begin
     coalesce((new.raw_user_meta_data->>'is_donor')::boolean, true),
     coalesce((new.raw_user_meta_data->>'lat')::double precision, 36.7538),
     coalesce((new.raw_user_meta_data->>'lng')::double precision, 3.0588),
+    coalesce(new.raw_user_meta_data->>'gender', 'male'),
+    coalesce((new.raw_user_meta_data->>'pregnant_or_breastfeeding')::boolean, false),
     coalesce((new.raw_user_meta_data->>'weight_over_50')::boolean, true),
     coalesce((new.raw_user_meta_data->>'has_chronic_illness')::boolean, false),
     coalesce(new.raw_user_meta_data->>'illness_details', ''),

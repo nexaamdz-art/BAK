@@ -7,9 +7,84 @@ const S={
 };
 
 const GROUPS=['A+','A-','B+','B-','O+','O-','AB+','AB-'];
-const WILAYAS=['Alger','Oran','Constantine','Blida','Annaba','Sétif','Tizi Ouzou','Béjaïa','Batna','Tlemcen'];
+const WILAYAS=[
+  'Adrar','Chlef','Laghouat','Oum El Bouaghi','Batna','Béjaïa','Biskra','Béchar','Blida','Bouira',
+  'Tamanrasset','Tébessa','Tlemcen','Tiaret','Tizi Ouzou','Alger','Djelfa','Jijel','Sétif','Saïda',
+  'Skikda','Sidi Bel Abbès','Annaba','Guelma','Constantine','Médéa','Mostaganem',"M'Sila",'Mascara','Ouargla',
+  'Oran','El Bayadh','Illizi','Bordj Bou Arréridj','Boumerdès','El Tarf','Tindouf','Tissemsilt','El Oued','Khenchela',
+  'Souk Ahras','Tipaza','Mila','Aïn Defla','Naâma','Aïn Témouchent','Ghardaïa','Relizane','Timimoun','Bordj Badji Mokhtar',
+  'Ouled Djellal','Béni Abbès','In Salah','In Guezzam','Touggourt','Djanet',"El M'Ghair",'El Meniaa'
+];
 const AVATARS=['me','av1','av2','av3','av4','av5'];
-const HOSPITALS=['Hôpital Central d\'Alger','CHU Mustapha Pacha','CHU Oran','CHU Constantine','CHU Blida'];
+const WILAYA_HOSPITALS={
+  Adrar:['EPH Ibn Sina (Adrar)','CTS Adrar'],
+  Chlef:['EPH Soeurs Bedj (Chlef)','EPH Ouled Mohamed (Chlef)','CTS Chlef'],
+  Laghouat:['EPH Ahmidat Hamidou (Laghouat)','CTS Laghouat'],
+  'Oum El Bouaghi':['EPH Mohamed Boudiaf (Oum El Bouaghi)','EPH Zerdani Salah (Aïn Beïda)','CTS Oum El Bouaghi'],
+  Batna:['CHU Touhami Benflis (Batna)','EPH Batna','CTS Batna'],
+  'Béjaïa':['CHU Khellil Amrane (Béjaïa)','EPH Frantz Fanon (Béjaïa)','CTS Béjaïa'],
+  Biskra:['EPH Bachir Bennacer (Biskra)','EPH Hakim Saâdane (Biskra)','CTS Biskra'],
+  'Béchar':['EPH Tourabi Boudjemaa (Béchar)','CTS Béchar'],
+  Blida:['CHU Frantz Fanon (Blida)','EPH Boufarik','CTS Blida'],
+  Bouira:['EPH Mohamed Boudiaf (Bouira)','EPH Lakhdaria','CTS Bouira'],
+  Tamanrasset:['EPH Mesbah Baghdadi (Tamanrasset)','CTS Tamanrasset'],
+  'Tébessa':['EPH Bouguerra Boulaâras (Tébessa)','EPH Alia Salah','CTS Tébessa'],
+  Tlemcen:['CHU Tidjani Damerdji (Tlemcen)','EPH Maghnia','CTS Tlemcen'],
+  Tiaret:['EPH Youcef Damerdji (Tiaret)','EPH Frenda','CTS Tiaret'],
+  'Tizi Ouzou':['CHU Nedir Mohamed (Tizi Ouzou)','EPH Azazga','CTS Tizi Ouzou'],
+  Alger:['CHU Mustapha Pacha',"Hôpital Central d'Alger (Aïn Naâdja)",'CHU Bab El Oued','CHU Beni Messous','EHS Salim Zemirli','CTS Alger'],
+  Djelfa:['EPH Mohand Akli (Djelfa)','CTS Djelfa'],
+  Jijel:['EPH Mohamed Seddik Benyahia (Jijel)','EPH El Milia','CTS Jijel'],
+  'Sétif':['CHU Saâdna Abdenour (Sétif)','EPH El Eulma','CTS Sétif'],
+  'Saïda':['EPH Ahmed Medeghri (Saïda)','CTS Saïda'],
+  Skikda:['EPH Abderazak Bouhara (Skikda)','EPH Azzaba','CTS Skikda'],
+  'Sidi Bel Abbès':['CHU Abdelkader Hassani (Sidi Bel Abbès)','CTS Sidi Bel Abbès'],
+  Annaba:['CHU Ibn Rochd (Annaba)','CHU Dorban (Annaba)','CTS Annaba'],
+  Guelma:['EPH El Hakim Okbi (Guelma)','EPH Oued Zenati','CTS Guelma'],
+  Constantine:['CHU Benbadis (Constantine)','Hôpital Militaire Régional (Constantine)','CTS Constantine'],
+  'Médéa':['EPH Mohamed Boudiaf (Médéa)','EPH Berrouaghia','CTS Médéa'],
+  Mostaganem:['EPH Ernesto Che Guevara (Mostaganem)','CHU Mostaganem','CTS Mostaganem'],
+  "M'Sila":['EPH Zahraoui (M\'Sila)','EPH Bou Saâda','CTS M\'Sila'],
+  Mascara:['EPH Meslem Tayeb (Mascara)','EPH Sig','CTS Mascara'],
+  Ouargla:['EPH Mohamed Boudiaf (Ouargla)','CHU Ouargla','CTS Ouargla'],
+  Oran:['CHU Oran (Dr Benzerdjeb)','EHU 1er Novembre 1954 (Oran)','Hôpital Militaire Régional (Oran)','CTS Oran'],
+  'El Bayadh':['EPH Mohamed Boudiaf (El Bayadh)','CTS El Bayadh'],
+  Illizi:['EPH Tarek Ibn Ziad (Illizi)','CTS Illizi'],
+  'Bordj Bou Arréridj':['EPH Lakhdar Bouzidi (Bordj Bou Arréridj)','CTS Bordj Bou Arréridj'],
+  'Boumerdès':['EPH Thénia','EPH Bordj Menaïel','EPH Dellys','CTS Boumerdès'],
+  'El Tarf':['EPH El Tarf (El Hadi Bendjedid)','EPH El Kala','CTS El Tarf'],
+  Tindouf:['EPH Si El Haouès (Tindouf)','CTS Tindouf'],
+  Tissemsilt:['EPH Tissemsilt','CTS Tissemsilt'],
+  'El Oued':['EPH Bachir Bennacer (El Oued)','CTS El Oued'],
+  Khenchela:['EPH Ahmed Ben Bella (Khenchela)','EPH Ali Boushaba (Khenchela)','CTS Khenchela'],
+  'Souk Ahras':['EPH Ibn Rochd (Souk Ahras)','CTS Souk Ahras'],
+  Tipaza:['EPH Tagzait (Tipaza)','EPH Koléa','EPH Hadjout','CTS Tipaza'],
+  Mila:['EPH Frères Maghlaoui (Mila)','EPH Chelghoum Laïd','CTS Mila'],
+  'Aïn Defla':['EPH Makour Hamou (Aïn Defla)','EPH Khemis Miliana','CTS Aïn Defla'],
+  'Naâma':['EPH Frères Kadri (Naâma)','EPH Mecheria','CTS Naâma'],
+  'Aïn Témouchent':['EPH Ahmed Medeghri (Aïn Témouchent)','CTS Aïn Témouchent'],
+  'Ghardaïa':['EPH Brahim Tirichine (Ghardaïa)','CTS Ghardaïa'],
+  Relizane:['EPH Mohamed Boudiaf (Relizane)','EPH Oued Rhiou','CTS Relizane'],
+  Timimoun:['EPH El Hadi Benali (Timimoun)','CTS Timimoun'],
+  'Bordj Badji Mokhtar':['EPH Bordj Badji Mokhtar','CTS Bordj Badji Mokhtar'],
+  'Ouled Djellal':['EPH Achour Ziane (Ouled Djellal)','CTS Ouled Djellal'],
+  'Béni Abbès':['EPH Mohamed Boudiaf (Béni Abbès)','CTS Béni Abbès'],
+  'In Salah':['EPH In Salah','CTS In Salah'],
+  'In Guezzam':['EPH In Guezzam','CTS In Guezzam'],
+  Touggourt:['EPH Slimane Amirat (Touggourt)','CTS Touggourt'],
+  Djanet:['EPH Djanet','CTS Djanet'],
+  "El M'Ghair":["EPH El M'Ghair","CTS El M'Ghair"],
+  'El Meniaa':['EPH Mohamed Chaâbani (El Meniaa)','CTS El Meniaa']
+};
+let donateWilaya='';
+let extraHospitals={};
+function hospitalsForWilaya(w){
+  const base=WILAYA_HOSPITALS[w]||[`EPH ${w}`,`CTS ${w}`];
+  const extra=extraHospitals[w]||[];
+  const out=[...base];
+  for(const h of extra){if(!out.some(x=>x.toLowerCase()===h.toLowerCase()))out.push(h)}
+  return out;
+}
 
 let lang=S.get('bak.lang','fr');
 let light=S.get('bak.light','0')==='1';
@@ -76,6 +151,10 @@ const I18={
     allWilayas:'Toutes les wilayas',
     viewDonations:'Voir mes dons',
     medTitle:'Questionnaire médical du donneur',
+    gender:'Genre',
+    male:'Homme',
+    female:'Femme',
+    qPregnant:'Êtes-vous enceinte ou avez-vous accouché / allaité lors des 6 derniers mois ?',
     qWeight:'Pesez-vous 50 kg ou plus ?',
     qIllness:'Avez-vous une maladie chronique ou transmissible (diabète, hépatite, cœur...) ?',
     qIllnessDet:'Précisez (optionnel)',
@@ -91,7 +170,10 @@ const I18={
     geoErr:'Localisation indisponible.',
     emailExists:'Cet e-mail est déjà enregistré. Connectez-vous.',
     resendBtn:'Renvoyer le lien',
-    resendSent:'Lien renvoyé ! Vérifiez aussi les spams.'
+    resendSent:'Lien renvoyé ! Vérifiez aussi les spams.',
+    hospSearchBtn:'Proches',
+    hospSearching:'Recherche...',
+    hospNone:'Aucun autre hôpital trouvé.'
   },
   en:{
     tag:'Give • Save • Live',end:'Together,<br>to save lives',
@@ -133,6 +215,10 @@ const I18={
     allWilayas:'All provinces',
     viewDonations:'View my donations',
     medTitle:'Donor Health Questionnaire',
+    gender:'Gender',
+    male:'Male',
+    female:'Female',
+    qPregnant:'Are you pregnant or have you given birth / breastfed in the last 6 months?',
     qWeight:'Do you weigh 50 kg or more?',
     qIllness:'Do you have any chronic or infectious illness (heart disease, hepatitis, insulin diabetes...)?',
     qIllnessDet:'Please specify (optional)',
@@ -148,7 +234,10 @@ const I18={
     geoErr:'Location unavailable.',
     emailExists:'This email is already registered. Please sign in.',
     resendBtn:'Resend confirmation link',
-    resendSent:'Link resent! Also check your Spam folder.'
+    resendSent:'Link resent! Also check your Spam folder.',
+    hospSearchBtn:'Nearby',
+    hospSearching:'Searching...',
+    hospNone:'No additional hospitals found.'
   },
   ar:{
     tag:'تبرّع • أنقذ • عِش',end:'معًا،<br>لإنقاذ الأرواح',
@@ -190,6 +279,10 @@ const I18={
     allWilayas:'جميع الولايات',
     viewDonations:'عرض تبرعاتي',
     medTitle:'الاستبيان الصحي للمتبرّع',
+    gender:'الجنس',
+    male:'ذكر',
+    female:'أنثى',
+    qPregnant:'هل أنتِ حامل حاليًا أو أنجبتِ / أرضعتِ خلال آخر 6 أشهر؟',
     qWeight:'هل يبلغ وزنك 50 كغ أو أكثر؟',
     qIllness:'هل تعاني من أي أمراض مزمنة أو معدية (أمراض القلب، التهاب الكبد، السكري...)؟',
     qIllnessDet:'حدّد الحالة (اختياري)',
@@ -205,7 +298,10 @@ const I18={
     geoErr:'تعذر تحديد الموقع.',
     emailExists:'هذا البريد مسجّل بالفعل. يرجى تسجيل الدخول.',
     resendBtn:'إعادة إرسال رابط التأكيد',
-    resendSent:'تمت إعادة الإرسال! تفقد مجلد الرسائل غير المرغوب فيها (Spam) أيضًا.'
+    resendSent:'تمت إعادة الإرسال! تفقد مجلد الرسائل غير المرغوب فيها (Spam) أيضًا.',
+    hospSearchBtn:'الأقرب',
+    hospSearching:'جارٍ البحث...',
+    hospNone:'لم يتم العثور على مستشفيات أخرى.'
   }
 };
 
@@ -372,12 +468,16 @@ const cardHTML=d=>`
 const ynRow=(name,label,val)=>`<div class="qrow"><span>${label}</span><div class="yn" data-yn="${name}"><button type="button" data-val="true" class="${val?'on':''}">${t('yes')}</button><button type="button" data-val="false" class="${!val?'on':''}">${t('no')}</button><input type="hidden" name="${name}" value="${val?'true':'false'}"></div></div>`;
 
 const healthQuestionsHTML=(p={})=>{
+  const gen=p.gender==='female'?'female':'male';
+  const preg=!!p.pregnant_or_breastfeeding;
   const w50=p.weight_over_50!==false;
   const ill=!!p.has_chronic_illness;
   const surg=!!p.recent_surgery_or_tattoo;
   const meds=!!p.taking_medication;
   return `<div class="qsec">
     <h4>${t('medTitle')}</h4>
+    <div class="qrow"><span>${t('gender')}</span><div class="yn" data-yn="gender"><button type="button" data-val="male" class="${gen==='male'?'on':''}">${t('male')}</button><button type="button" data-val="female" class="${gen==='female'?'on':''}">${t('female')}</button><input type="hidden" name="gender" value="${gen}"></div></div>
+    <div id="pregnantWrap" style="display:${gen==='female'?'block':'none'}">${ynRow('pregnant_or_breastfeeding',t('qPregnant'),preg)}</div>
     ${ynRow('weight_over_50',t('qWeight'),w50)}
     ${ynRow('has_chronic_illness',t('qIllness'),ill)}
     <div id="illnessDetailsWrap" class="fld" style="display:${ill?'flex':'none'};margin-top:4px"><label>${t('qIllnessDet')}</label><input name="illness_details" value="${esc(p.illness_details||'')}" placeholder="..."></div>
@@ -407,7 +507,7 @@ auth:()=>`<div class="scr"><div class="bg"></div>${cells([['cell','top:16%;right
     ${authTab==='signup'?`
       <div class="fgrid">
         <div class="fld"><label>${t('blood')}</label><select name="blood_group">${GROUPS.map(g=>`<option value="${g}">${g}</option>`).join('')}</select></div>
-        <div class="fld"><label>${t('wil')}</label><select name="wilaya">${WILAYAS.map(w=>`<option value="${w}">${esc(w)}</option>`).join('')}</select></div>
+        <div class="fld"><label>${t('wil')}</label><select name="wilaya">${WILAYAS.map(w=>`<option value="${esc(w)}" ${w==='Alger'?'selected':''}>${esc(w)}</option>`).join('')}</select></div>
       </div>
       <div class="fgrid">
         <div class="fld"><label>${t('phone')}</label><input name="phone" type="tel" placeholder="+213550000000"></div>
@@ -488,7 +588,7 @@ profile:()=>{
       <div class="fld"><label>${t('fullName')}</label><input name="full_name" required value="${esc(p.full_name)}"></div>
       <div class="fgrid">
         <div class="fld"><label>${t('blood')}</label><select name="blood_group">${GROUPS.map(g=>`<option value="${g}" ${p.blood_group===g?'selected':''}>${g}</option>`).join('')}</select></div>
-        <div class="fld"><label>${t('wil')}</label><select name="wilaya">${WILAYAS.map(w=>`<option value="${w}" ${p.wilaya===w?'selected':''}>${esc(w)}</option>`).join('')}</select></div>
+        <div class="fld"><label>${t('wil')}</label><select name="wilaya">${WILAYAS.map(w=>`<option value="${esc(w)}" ${p.wilaya===w?'selected':''}>${esc(w)}</option>`).join('')}</select></div>
       </div>
       <div class="fgrid">
         <div class="fld"><label>${t('phone')}</label><input name="phone" type="tel" value="${esc(p.phone||'')}" placeholder="+213550000000"></div>
@@ -550,22 +650,32 @@ request:(id)=>{
       <p class="sub">${t('reqSub')}</p>
       <div class="fgrid">
         <div class="fld"><label>${t('blood')}</label><select name="blood_group">${GROUPS.map(g=>`<option value="${g}" ${bg===g?'selected':''}>${g}</option>`).join('')}</select></div>
-        <div class="fld"><label>${t('wil')}</label><select name="wilaya">${WILAYAS.map(wi=>`<option value="${wi}" ${w===wi?'selected':''}>${esc(wi)}</option>`).join('')}</select></div>
+        <div class="fld"><label>${t('wil')}</label><select name="wilaya">${WILAYAS.map(wi=>`<option value="${esc(wi)}" ${w===wi?'selected':''}>${esc(wi)}</option>`).join('')}</select></div>
       </div>
-      <div class="fld"><label>${t('reqMsg')}</label><textarea name="message" rows="3" placeholder="CHU Mustapha Pacha..."></textarea></div>
+      <div class="fld"><label>${t('reqMsg')}</label><textarea name="message" rows="3" placeholder="${esc(hospitalsForWilaya(w)[0]||'CHU Mustapha Pacha')}..."></textarea></div>
       <button class="btn" type="submit" ${busy?'disabled':''}>${t('sendReq')}</button>
     </form>
   </div>${nav('search')}</div>`;
 },
 
 donate:()=>{
-  const p=currentProfile||{blood_group:'O+'};
+  const p=currentProfile||{blood_group:'O+',wilaya:'Alger'};
+  const w=(donateWilaya&&WILAYAS.includes(donateWilaya))?donateWilaya:(WILAYAS.includes(p.wilaya)?p.wilaya:'Alger');
+  donateWilaya=w;
+  const hospList=hospitalsForWilaya(w);
   const today=new Date().toISOString().slice(0,10);
   return `<div class="scr"><div class="bg"></div><div class="body">${hd(t('donateTitle'))}
     <form id="donateForm" class="fcard">
-      <div class="fld"><label>${t('hospital')}</label>
-        <div class="pres">${HOSPITALS.map(h=>`<button type="button" data-hosp="${esc(h)}">${esc(h)}</button>`).join('')}</div>
-        <input id="hospInput" name="hospital" required placeholder="Hôpital Central d'Alger">
+      <div class="fld"><label>${t('wil')}</label>
+        <select id="donateWilaya" name="wilaya">${WILAYAS.map(wi=>`<option value="${esc(wi)}" ${w===wi?'selected':''}>${esc(wi)}</option>`).join('')}</select>
+      </div>
+      <div class="fld">
+        <div class="hosp-top">
+          <label>${t('hospital')}</label>
+          <button type="button" class="hosp-geo" data-findhosp>${ic('pin')}<span>${t('hospSearchBtn')}</span></button>
+        </div>
+        <div id="hospPresets" class="pres">${hospList.map(h=>`<button type="button" data-hosp="${esc(h)}">${esc(h)}</button>`).join('')}</div>
+        <input id="hospInput" name="hospital" required placeholder="${esc(hospList[0]||'Hôpital Central')}">
       </div>
       <div class="fgrid">
         <div class="fld"><label>${t('blood')}</label><select name="blood_group">${GROUPS.map(g=>`<option value="${g}" ${p.blood_group===g?'selected':''}>${g}</option>`).join('')}</select></div>
@@ -808,6 +918,8 @@ async function initMap(id){
 }
 
 function parseHealthForm(fdObj){
+  if('gender' in fdObj)fdObj.gender=fdObj.gender==='female'?'female':'male';
+  if('pregnant_or_breastfeeding' in fdObj)fdObj.pregnant_or_breastfeeding=fdObj.gender==='female'&&fdObj.pregnant_or_breastfeeding==='true';
   if('weight_over_50' in fdObj)fdObj.weight_over_50=fdObj.weight_over_50==='true';
   if('has_chronic_illness' in fdObj)fdObj.has_chronic_illness=fdObj.has_chronic_illness==='true';
   if('recent_surgery_or_tattoo' in fdObj)fdObj.recent_surgery_or_tattoo=fdObj.recent_surgery_or_tattoo==='true';
@@ -870,6 +982,21 @@ function bindForms(){
     }finally{
       busy=false;
     }
+  };
+
+  const dw=document.getElementById('donateWilaya');
+  if(dw)dw.onchange=()=>{
+    donateWilaya=dw.value;
+    const listH=hospitalsForWilaya(donateWilaya);
+    const pr=document.getElementById('hospPresets');
+    const hi=document.getElementById('hospInput');
+    if(pr)pr.innerHTML=listH.map(h=>`<button type="button" data-hosp="${esc(h)}">${esc(h)}</button>`).join('');
+    if(hi)hi.placeholder=listH[0]||'';
+  };
+  const hiEl=document.getElementById('hospInput');
+  if(hiEl)hiEl.oninput=()=>{
+    const curVal=hiEl.value.trim().toLowerCase();
+    document.querySelectorAll('#hospPresets button').forEach(b=>b.classList.toggle('on',b.dataset.hosp.toLowerCase()===curVal));
   };
 
   const df=document.getElementById('donateForm');
@@ -1057,6 +1184,16 @@ document.addEventListener('click',async e=>{
     if(wrap.dataset.yn==='has_chronic_illness'){
       const det=document.getElementById('illnessDetailsWrap');
       if(det)det.style.display=val==='true'?'flex':'none';
+    }else if(wrap.dataset.yn==='gender'){
+      const pw=document.getElementById('pregnantWrap');
+      if(pw){
+        pw.style.display=val==='female'?'block':'none';
+        if(val!=='female'){
+          const pi=pw.querySelector('input[name="pregnant_or_breastfeeding"]');
+          if(pi)pi.value='false';
+          pw.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.val==='false'));
+        }
+      }
     }
     return;
   }
@@ -1069,7 +1206,7 @@ document.addEventListener('click',async e=>{
     return;
   }
 
-  const x=e.target.closest('[data-go],[data-back],[data-g],[data-w],[data-l],[data-t],[data-atab],[data-av],[data-hosp],[data-comp],[data-del],[data-nread],[data-dark],[data-togglefilter],[data-cyclegrp],[data-logout],[data-resend],[data-toast]');
+  const x=e.target.closest('[data-go],[data-back],[data-g],[data-w],[data-l],[data-t],[data-atab],[data-av],[data-hosp],[data-findhosp],[data-comp],[data-del],[data-nread],[data-dark],[data-togglefilter],[data-cyclegrp],[data-logout],[data-resend],[data-toast]');
   if(!x)return;
 
   if(x.dataset.go){
@@ -1096,6 +1233,40 @@ document.addEventListener('click',async e=>{
   }else if(x.dataset.hosp){
     const hi=document.getElementById('hospInput');
     if(hi)hi.value=x.dataset.hosp;
+    document.querySelectorAll('#hospPresets button').forEach(b=>b.classList.toggle('on',b===x));
+  }else if('findhosp' in x.dataset){
+    const lbl=x.querySelector('span');
+    if(lbl)lbl.textContent=t('hospSearching');
+    x.disabled=true;
+    try{
+      const dw=document.getElementById('donateWilaya');
+      const w=(dw&&dw.value)||donateWilaya||'Alger';
+      let coords=null;
+      if(navigator.geolocation){
+        coords=await new Promise(res=>{
+          navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude}),()=>res(null),{timeout:4500});
+        });
+      }
+      const qs=new URLSearchParams({wilaya:w,lang});
+      if(coords){qs.set('lat',coords.lat);qs.set('lng',coords.lng)}
+      const res=await api('/api/hospitals?'+qs.toString());
+      const names=(res.hospitals||[]).map(h=>h.name).filter(Boolean);
+      if(names.length){
+        extraHospitals[w]=names;
+        const listH=hospitalsForWilaya(w);
+        const pr=document.getElementById('hospPresets');
+        const hi=document.getElementById('hospInput');
+        const cur=(hi&&hi.value.trim().toLowerCase())||'';
+        if(pr)pr.innerHTML=listH.map(h=>`<button type="button" data-hosp="${esc(h)}" class="${h.toLowerCase()===cur?'on':''}">${esc(h)}</button>`).join('');
+      }else{
+        toast(t('hospNone'));
+      }
+    }catch(_err){
+      toast(t('hospNone'));
+    }finally{
+      if(lbl)lbl.textContent=t('hospSearchBtn');
+      x.disabled=false;
+    }
   }else if(x.dataset.comp){
     try{
       await api('/api/donations/'+encodeURIComponent(x.dataset.comp),{method:'PATCH',body:JSON.stringify({status:'completed'})});

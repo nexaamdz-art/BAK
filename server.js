@@ -11,20 +11,73 @@ const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 const AVATARS = ['me', 'av1', 'av2', 'av3', 'av4', 'av5'];
 
 const WILAYA_COORDS = {
+  Adrar: { lat: 27.8742, lng: -0.2939 },
+  Chlef: { lat: 36.1653, lng: 1.3345 },
+  Laghouat: { lat: 33.8, lng: 2.8651 },
+  'Oum El Bouaghi': { lat: 35.8754, lng: 7.1135 },
+  Batna: { lat: 35.5559, lng: 6.1741 },
+  'Béjaïa': { lat: 36.7509, lng: 5.0567 },
+  Biskra: { lat: 34.8504, lng: 5.7281 },
+  'Béchar': { lat: 31.6167, lng: -2.2167 },
+  Blida: { lat: 36.47, lng: 2.83 },
+  Bouira: { lat: 36.3749, lng: 3.902 },
+  Tamanrasset: { lat: 22.785, lng: 5.5228 },
+  'Tébessa': { lat: 35.4042, lng: 8.1242 },
+  Tlemcen: { lat: 34.8783, lng: -1.315 },
+  Tiaret: { lat: 35.371, lng: 1.317 },
+  'Tizi Ouzou': { lat: 36.7118, lng: 4.0459 },
   Alger: { lat: 36.7538, lng: 3.0588 },
   Algiers: { lat: 36.7538, lng: 3.0588 },
-  Oran: { lat: 35.6971, lng: -0.6308 },
-  Constantine: { lat: 36.365, lng: 6.6147 },
-  Blida: { lat: 36.47, lng: 2.83 },
-  Annaba: { lat: 36.9, lng: 7.7667 },
+  Djelfa: { lat: 34.6728, lng: 3.263 },
+  Jijel: { lat: 36.8206, lng: 5.7667 },
   'Sétif': { lat: 36.1911, lng: 5.4137 },
-  Setif: { lat: 36.1911, lng: 5.4137 },
-  'Tizi Ouzou': { lat: 36.7118, lng: 4.0459 },
-  'Béjaïa': { lat: 36.7509, lng: 5.0567 },
-  Bejaia: { lat: 36.7509, lng: 5.0567 },
-  Batna: { lat: 35.5559, lng: 6.1741 },
-  Tlemcen: { lat: 34.8783, lng: -1.315 },
+  'Saïda': { lat: 34.8303, lng: 0.1517 },
+  Skikda: { lat: 36.8762, lng: 6.9092 },
+  'Sidi Bel Abbès': { lat: 35.1899, lng: -0.6308 },
+  Annaba: { lat: 36.9, lng: 7.7667 },
+  Guelma: { lat: 36.4621, lng: 7.4261 },
+  Constantine: { lat: 36.365, lng: 6.6147 },
+  'Médéa': { lat: 36.2642, lng: 2.7539 },
+  Mostaganem: { lat: 35.9312, lng: 0.0892 },
+  "M'Sila": { lat: 35.7058, lng: 4.5419 },
+  Mascara: { lat: 35.3966, lng: 0.1403 },
+  Ouargla: { lat: 31.9493, lng: 5.325 },
+  Oran: { lat: 35.6971, lng: -0.6308 },
+  'El Bayadh': { lat: 33.6832, lng: 1.0193 },
+  Illizi: { lat: 26.505, lng: 8.482 },
+  'Bordj Bou Arréridj': { lat: 36.0732, lng: 4.7611 },
+  'Boumerdès': { lat: 36.7664, lng: 3.4772 },
+  'El Tarf': { lat: 36.7672, lng: 8.3138 },
+  Tindouf: { lat: 27.6711, lng: -8.1474 },
+  Tissemsilt: { lat: 35.6072, lng: 1.8108 },
+  'El Oued': { lat: 33.3561, lng: 6.8632 },
+  Khenchela: { lat: 35.4358, lng: 7.1433 },
+  'Souk Ahras': { lat: 36.2864, lng: 7.9511 },
+  Tipaza: { lat: 36.5897, lng: 2.4475 },
+  Mila: { lat: 36.4503, lng: 6.2644 },
+  'Aïn Defla': { lat: 36.264, lng: 1.9679 },
+  'Naâma': { lat: 33.2667, lng: -0.3167 },
+  'Aïn Témouchent': { lat: 35.2975, lng: -1.1404 },
+  'Ghardaïa': { lat: 32.4909, lng: 3.6735 },
+  Relizane: { lat: 35.7373, lng: 0.556 },
+  Timimoun: { lat: 29.2639, lng: 0.231 },
+  'Bordj Badji Mokhtar': { lat: 21.3275, lng: 0.9547 },
+  'Ouled Djellal': { lat: 34.4319, lng: 5.0644 },
+  'Béni Abbès': { lat: 30.1322, lng: -2.1667 },
+  'In Salah': { lat: 27.1935, lng: 2.4607 },
+  'In Guezzam': { lat: 19.5667, lng: 5.7667 },
+  Touggourt: { lat: 33.1053, lng: 6.058 },
+  Djanet: { lat: 24.5542, lng: 9.484 },
+  "El M'Ghair": { lat: 33.95, lng: 5.9242 },
+  'El Meniaa': { lat: 30.5792, lng: 2.8792 },
 };
+
+const WILAYA_COORDS_NORM = Object.fromEntries(
+  Object.entries(WILAYA_COORDS).map(([k, v]) => [
+    k.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''),
+    v,
+  ])
+);
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -169,7 +222,13 @@ function clearAuthCookies(res, req) {
 
 function coordsForWilaya(wilaya) {
   if (!wilaya) return WILAYA_COORDS.Alger;
-  return WILAYA_COORDS[wilaya] || WILAYA_COORDS.Alger;
+  if (WILAYA_COORDS[wilaya]) return WILAYA_COORDS[wilaya];
+  const norm = String(wilaya)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  return WILAYA_COORDS_NORM[norm] || WILAYA_COORDS.Alger;
 }
 
 function distanceKm(lat1, lng1, lat2, lng2) {
@@ -223,6 +282,8 @@ async function requireAuth(req, res, next) {
 }
 
 const HEALTH_COLS = [
+  'gender',
+  'pregnant_or_breastfeeding',
   'weight_over_50',
   'has_chronic_illness',
   'illness_details',
@@ -233,13 +294,19 @@ const HEALTH_COLS = [
 ];
 
 function computeEligibility(h) {
-  if (!h.weight_over_50 || h.has_chronic_illness) return 'deferred';
+  if (!h.weight_over_50 || h.has_chronic_illness || h.pregnant_or_breastfeeding) return 'deferred';
   if (h.recent_surgery_or_tattoo || h.taking_medication) return 'review';
   return 'eligible';
 }
 
 function extractHealthFields(src = {}) {
+  const gender = src.gender === 'female' ? 'female' : 'male';
   const health = {
+    gender,
+    pregnant_or_breastfeeding:
+      gender === 'female' && typeof src.pregnant_or_breastfeeding === 'boolean'
+        ? src.pregnant_or_breastfeeding
+        : false,
     weight_over_50: typeof src.weight_over_50 === 'boolean' ? src.weight_over_50 : true,
     has_chronic_illness: typeof src.has_chronic_illness === 'boolean' ? src.has_chronic_illness : false,
     illness_details: typeof src.illness_details === 'string' ? src.illness_details.trim() : '',
@@ -620,6 +687,8 @@ app.put('/api/profile', requireAuth, async (req, res) => {
     }
 
     const hasHealthInput =
+      'gender' in body ||
+      'pregnant_or_breastfeeding' in body ||
       'weight_over_50' in body ||
       'has_chronic_illness' in body ||
       'illness_details' in body ||
@@ -954,6 +1023,70 @@ app.get('/api/geocode', async (req, res) => {
   } catch (err) {
     console.error('Geocode error:', err);
     return res.status(500).json({ error: 'SERVER_ERROR', results: [] });
+  }
+});
+
+app.get('/api/hospitals', async (req, res) => {
+  try {
+    const wilaya = String(req.query.wilaya || '').trim();
+    const lang = ['fr', 'en', 'ar'].includes(String(req.query.lang)) ? String(req.query.lang) : 'fr';
+    const latNum = Number(req.query.lat);
+    const lngNum = Number(req.query.lng);
+    const hasCoords = Number.isFinite(latNum) && Number.isFinite(lngNum);
+    const center = hasCoords ? { lat: latNum, lng: lngNum } : coordsForWilaya(wilaya || 'Alger');
+
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    const searchTerm = wilaya && !hasCoords ? `hopital ${wilaya}` : 'hopital';
+    url.searchParams.set('q', searchTerm);
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('limit', '10');
+    url.searchParams.set('countrycodes', 'dz');
+    url.searchParams.set('accept-language', lang);
+    url.searchParams.set('namedetails', '1');
+    const delta = 0.45;
+    url.searchParams.set(
+      'viewbox',
+      `${center.lng - delta},${center.lat + delta},${center.lng + delta},${center.lat - delta}`
+    );
+    url.searchParams.set('bounded', hasCoords ? '1' : '0');
+
+    const r = await fetch(url.toString(), {
+      headers: {
+        'User-Agent': 'BAK-BloodDonationApp/1.0 (https://github.com/nexaamdz-art/BAK)',
+      },
+    });
+    if (!r.ok) {
+      return res.json({ hospitals: [] });
+    }
+
+    const items = await r.json();
+    const seen = new Set();
+    const hospitals = [];
+    for (const item of Array.isArray(items) ? items : []) {
+      const named = item.namedetails || {};
+      const shortName =
+        (lang === 'ar' ? named['name:ar'] : lang === 'en' ? named['name:en'] : named['name:fr']) ||
+        named.name ||
+        item.name ||
+        String(item.display_name || '').split(',')[0].trim();
+      const lat = Number(item.lat);
+      const lng = Number(item.lon);
+      if (!shortName || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const key = shortName.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      hospitals.push({
+        name: shortName,
+        lat,
+        lng,
+        d: distanceKm(center.lat, center.lng, lat, lng),
+      });
+    }
+    hospitals.sort((a, b) => a.d - b.d);
+    return res.json({ hospitals: hospitals.slice(0, 8) });
+  } catch (err) {
+    console.error('Hospitals search error:', err);
+    return res.json({ hospitals: [] });
   }
 });
 
