@@ -407,6 +407,13 @@ app.post('/api/auth/signup', requireSupabase, async (req, res) => {
       return res.status(400).json({ error: 'SIGNUP_FAILED', message: error.message });
     }
 
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return res.status(409).json({
+        error: 'EMAIL_EXISTS',
+        message: 'This email is already registered. Please sign in.',
+      });
+    }
+
     let profile = null;
     if (data.session && data.user) {
       setAuthCookies(res, req, data.session);
@@ -429,6 +436,30 @@ app.post('/api/auth/signup', requireSupabase, async (req, res) => {
   } catch (err) {
     console.error('Signup error:', err);
     return res.status(500).json({ error: 'SERVER_ERROR', message: err.message || 'Signup failed' });
+  }
+});
+
+app.post('/api/auth/resend', requireSupabase, async (req, res) => {
+  try {
+    const email = req.body && typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: 'Valid email is required.' });
+    }
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    const originHeader = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
+    const redirectBase = originHeader || (host ? `${proto}://${host}` : '');
+    const opts = redirectBase && !/localhost|127\.0\.0\.1/.test(redirectBase)
+      ? { emailRedirectTo: `${redirectBase.replace(/\/+$/, '')}/` }
+      : undefined;
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.auth.resend({ type: 'signup', email, options: opts });
+    if (error) {
+      return res.status(400).json({ error: 'RESEND_FAILED', message: error.message });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'SERVER_ERROR', message: err.message || 'Resend failed' });
   }
 });
 

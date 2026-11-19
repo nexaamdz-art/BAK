@@ -32,6 +32,7 @@ let authTab='login';
 let authErr='';
 let authOk='';
 let pendingRoute='';
+let pendingEmail='';
 let busy=false;
 
 const I18={
@@ -87,7 +88,10 @@ const I18={
     elig_deferred:'Non éligible actuellement',
     mapSearchPh:'Ville, hôpital, quartier...',
     mapSearchNone:'Aucun lieu trouvé.',
-    geoErr:'Localisation indisponible.'
+    geoErr:'Localisation indisponible.',
+    emailExists:'Cet e-mail est déjà enregistré. Connectez-vous.',
+    resendBtn:'Renvoyer le lien',
+    resendSent:'Lien renvoyé ! Vérifiez aussi les spams.'
   },
   en:{
     tag:'Give • Save • Live',end:'Together,<br>to save lives',
@@ -141,7 +145,10 @@ const I18={
     elig_deferred:'Currently deferred',
     mapSearchPh:'City, hospital, area...',
     mapSearchNone:'Place not found.',
-    geoErr:'Location unavailable.'
+    geoErr:'Location unavailable.',
+    emailExists:'This email is already registered. Please sign in.',
+    resendBtn:'Resend confirmation link',
+    resendSent:'Link resent! Also check your Spam folder.'
   },
   ar:{
     tag:'تبرّع • أنقذ • عِش',end:'معًا،<br>لإنقاذ الأرواح',
@@ -195,7 +202,10 @@ const I18={
     elig_deferred:'غير مؤهّل حاليًا',
     mapSearchPh:'مدينة، مستشفى، حي...',
     mapSearchNone:'لم يتم العثور على الموقع.',
-    geoErr:'تعذر تحديد الموقع.'
+    geoErr:'تعذر تحديد الموقع.',
+    emailExists:'هذا البريد مسجّل بالفعل. يرجى تسجيل الدخول.',
+    resendBtn:'إعادة إرسال رابط التأكيد',
+    resendSent:'تمت إعادة الإرسال! تفقد مجلد الرسائل غير المرغوب فيها (Spam) أيضًا.'
   }
 };
 
@@ -387,7 +397,7 @@ auth:()=>`<div class="scr"><div class="bg"></div>${cells([['cell','top:16%;right
     <button data-atab="signup" class="${authTab==='signup'?'on':''}">${t('signupTab')}</button>
   </div>
   ${authErr?`<div class="errbox">${esc(authErr)}</div>`:''}
-  ${authOk?`<div class="okbox">${esc(authOk)}</div>`:''}
+  ${authOk?`<div class="okbox">${esc(authOk)}${pendingEmail?` <button type="button" data-resend style="text-decoration:underline;font-weight:700;color:#145c2c;margin-inline-start:6px">${t('resendBtn')}</button>`:''}</div>`:''}
   <form id="authForm" class="fcard">
     ${authTab==='signup'?`
       <div class="fld"><label>${t('fullName')}</label><input name="full_name" required placeholder="Ahmed Benali"></div>
@@ -818,9 +828,11 @@ function bindForms(){
       const endpoint=authTab==='login'?'/api/auth/login':'/api/auth/signup';
       const res=await api(endpoint,{method:'POST',body:JSON.stringify(fdObj)});
       if(res.emailConfirmationRequired){
+        pendingEmail=fdObj.email||'';
         authOk=t('checkEmail');
         authTab='login';
       }else{
+        pendingEmail='';
         saveSession(res.session);
         currentUser=res.user;
         currentProfile=res.profile;
@@ -831,7 +843,8 @@ function bindForms(){
         return;
       }
     }catch(err){
-      authErr=err.message;
+      authErr=err.code==='EMAIL_EXISTS'?t('emailExists'):err.message;
+      if(err.code==='EMAIL_EXISTS')authTab='login';
     }finally{
       busy=false;
       render();
@@ -1056,7 +1069,7 @@ document.addEventListener('click',async e=>{
     return;
   }
 
-  const x=e.target.closest('[data-go],[data-back],[data-g],[data-w],[data-l],[data-t],[data-atab],[data-av],[data-hosp],[data-comp],[data-del],[data-nread],[data-dark],[data-togglefilter],[data-cyclegrp],[data-logout],[data-toast]');
+  const x=e.target.closest('[data-go],[data-back],[data-g],[data-w],[data-l],[data-t],[data-atab],[data-av],[data-hosp],[data-comp],[data-del],[data-nread],[data-dark],[data-togglefilter],[data-cyclegrp],[data-logout],[data-resend],[data-toast]');
   if(!x)return;
 
   if(x.dataset.go){
@@ -1110,6 +1123,12 @@ document.addEventListener('click',async e=>{
     render();
   }else if('dark' in x.dataset){
     light=!light;S.set('bak.light',light?'1':'0');render();
+  }else if('resend' in x.dataset){
+    if(!pendingEmail)return;
+    try{
+      await api('/api/auth/resend',{method:'POST',body:JSON.stringify({email:pendingEmail})});
+      toast(t('resendSent'));
+    }catch(err){toast(err.message)}
   }else if('logout' in x.dataset){
     await api('/api/auth/logout',{method:'POST'}).catch(()=>{});
     saveSession(null);
