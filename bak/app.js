@@ -173,7 +173,8 @@ const I18={
     resendSent:'Lien renvoyé ! Vérifiez aussi les spams.',
     hospSearchBtn:'Proches',
     hospSearching:'Recherche...',
-    hospNone:'Aucun autre hôpital trouvé.'
+    hospNone:'Aucun autre hôpital trouvé.',
+    medDisclaimer:'Cette évaluation est indicative et ne remplace pas l\'avis d\'un médecin ou du centre de transfusion.'
   },
   en:{
     tag:'Give • Save • Live',end:'Together,<br>to save lives',
@@ -237,7 +238,8 @@ const I18={
     resendSent:'Link resent! Also check your Spam folder.',
     hospSearchBtn:'Nearby',
     hospSearching:'Searching...',
-    hospNone:'No additional hospitals found.'
+    hospNone:'No additional hospitals found.',
+    medDisclaimer:'This assessment is indicative and does not replace advice from a doctor or the blood transfusion center.'
   },
   ar:{
     tag:'تبرّع • أنقذ • عِش',end:'معًا،<br>لإنقاذ الأرواح',
@@ -301,7 +303,8 @@ const I18={
     resendSent:'تمت إعادة الإرسال! تفقد مجلد الرسائل غير المرغوب فيها (Spam) أيضًا.',
     hospSearchBtn:'الأقرب',
     hospSearching:'جارٍ البحث...',
-    hospNone:'لم يتم العثور على مستشفيات أخرى.'
+    hospNone:'لم يتم العثور على مستشفيات أخرى.',
+    medDisclaimer:'هذا التقييم استرشادي ولا يغني عن رأي الطبيب أو مركز نقل الدم.'
   }
 };
 
@@ -456,13 +459,12 @@ function requireLogin(targetRoute){
 /* ---------- Card & List Helpers ---------- */
 const cardHTML=d=>`
   <div class="top">
-    <span class="av"><img src="assets/${esc(d.a)}.png" alt=""></span>
-    <div class="inf"><b>${esc(d.n)}</b><span class="meta">${ic('drop','red')}<em>${esc(d.g)}</em><small>${esc(d.w)}</small></span></div>
-    <span class="dist" style="position:static">${ic('pin')}${d.d} km</span>
+    <span class="av"><img src="assets/${esc(d.a||'av1')}.png" alt=""></span>
+    <div class="inf"><b>${esc(d.n||'')}</b><span class="meta">${ic('drop','red')}<em>${esc(d.g||'')}</em><small>${esc(d.w||'')}</small></span></div>
+    <span class="dist" style="position:static">${ic('pin')}${Number.isFinite(d.d)?d.d:0} km</span>
   </div>
   <div class="acts">
-    ${d.tel?`<a class="btn" href="tel:${esc(d.tel)}">${t('contact')} ${ic('phone')}</a>`:`<button class="btn" data-go="#/request/${esc(d.id)}">${t('contact')} ${ic('phone')}</button>`}
-    <button class="btn sec" data-go="#/request/${esc(d.id)}">${t('requestBtn')}</button>
+    <button class="btn" style="grid-column:1/-1" data-go="#/request/${esc(d.id||'')}">${t('requestBtn')}</button>
   </div>`;
 
 const ynRow=(name,label,val)=>`<div class="qrow"><span>${label}</span><div class="yn" data-yn="${name}"><button type="button" data-val="true" class="${val?'on':''}">${t('yes')}</button><button type="button" data-val="false" class="${!val?'on':''}">${t('no')}</button><input type="hidden" name="${name}" value="${val?'true':'false'}"></div></div>`;
@@ -484,6 +486,7 @@ const healthQuestionsHTML=(p={})=>{
     ${ynRow('recent_surgery_or_tattoo',t('qSurgery'),surg)}
     ${ynRow('taking_medication',t('qMeds'),meds)}
     <div class="fld" style="margin-top:6px"><label>${t('qLastDon')}</label><input name="last_donation_date" type="date" value="${esc(p.last_donation_date||'')}"></div>
+    <p style="font-size:12.5px;color:#6b4a43;margin-top:8px;line-height:1.35">${t('medDisclaimer')}</p>
   </div>`;
 };
 

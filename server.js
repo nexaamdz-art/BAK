@@ -1,9 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const STATIC_DIR = path.join(__dirname, 'bak');
 
@@ -79,7 +82,48 @@ const WILAYA_COORDS_NORM = Object.fromEntries(
   ])
 );
 
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://cdnjs.cloudflare.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+        fontSrc: ['https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https://*.tile.openstreetmap.org'],
+        connectSrc: ["'self'"],
+        frameAncestors: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    },
+  })
+);
 app.use(express.json({ limit: '1mb' }));
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'RATE_LIMIT', message: 'Too many authentication attempts. Please try again later.' },
+});
+
+const requestsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'RATE_LIMIT', message: 'Too many blood requests. Please try again later.' },
+});
+
+const nominatimLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'RATE_LIMIT', message: 'Too many location searches. Please try again later.' },
+});
 
 function cleanEnvVal(v) {
   if (!v || typeof v !== 'string') return '';
@@ -140,7 +184,6 @@ function getSupabaseKey() {
     'VITE_SUPABASE_ANON_KEY',
     'PUBLIC_SUPABASE_ANON_KEY',
     'REACT_APP_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
   ]);
   if (envVal) return envVal;
   return readBakConfigFile().key;
@@ -200,9 +243,7 @@ function extractToken(req) {
 function setAuthCookies(res, req, session) {
   if (!session || !session.access_token) return;
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  const common = `HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; ${
-    isHttps ? 'SameSite=None; Secure' : 'SameSite=Lax'
-  }`;
+  const common = `HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax${isHttps ? '; Secure' : ''}`;
   res.setHeader('Set-Cookie', [
     `bak_access_token=${encodeURIComponent(session.access_token)}; ${common}`,
     `bak_refresh_token=${encodeURIComponent(session.refresh_token || '')}; ${common}`,
@@ -211,9 +252,7 @@ function setAuthCookies(res, req, session) {
 
 function clearAuthCookies(res, req) {
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  const common = `HttpOnly; Path=/; Max-Age=0; ${
-    isHttps ? 'SameSite=None; Secure' : 'SameSite=Lax'
-  }`;
+  const common = `HttpOnly; Path=/; Max-Age=0; SameSite=Lax${isHttps ? '; Secure' : ''}`;
   res.setHeader('Set-Cookie', [
     `bak_access_token=; ${common}`,
     `bak_refresh_token=; ${common}`,
@@ -294,8 +333,23 @@ const HEALTH_COLS = [
 ];
 
 function computeEligibility(h) {
-  if (!h.weight_over_50 || h.has_chronic_illness || h.pregnant_or_breastfeeding) return 'deferred';
-  if (h.recent_surgery_or_tattoo || h.taking_medication) return 'review';
+  if (!h.weight_over_50 || h.has_chronic_illness || (h.gender === 'female' && h.pregnant_or_breastfeeding)) {
+    return 'deferred';
+  }
+  if (h.recent_surgery_or_tattoo || h.taking_medication) {
+    return 'review';
+  }
+  if (typeof h.last_donation_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.last_donation_date)) {
+    const dt = new Date(`${h.last_donation_date}T00:00:00Z`);
+    if (!Number.isNaN(dt.getTime())) {
+      const now = new Date();
+      const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      const diffDays = (todayUtc - dt.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 0 && diffDays < 56) {
+        return 'review';
+      }
+    }
+  }
   return 'eligible';
 }
 
@@ -406,7 +460,7 @@ async function ensureProfile(supabase, user) {
 
 /* ---------- Auth API ---------- */
 
-app.post('/api/auth/signup', requireSupabase, async (req, res) => {
+app.post('/api/auth/signup', authLimiter, requireSupabase, async (req, res) => {
   try {
     const {
       email,
@@ -506,7 +560,7 @@ app.post('/api/auth/signup', requireSupabase, async (req, res) => {
   }
 });
 
-app.post('/api/auth/resend', requireSupabase, async (req, res) => {
+app.post('/api/auth/resend', authLimiter, requireSupabase, async (req, res) => {
   try {
     const email = req.body && typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     if (!email || !email.includes('@')) {
@@ -530,7 +584,7 @@ app.post('/api/auth/resend', requireSupabase, async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', requireSupabase, async (req, res) => {
+app.post('/api/auth/login', authLimiter, requireSupabase, async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
@@ -569,7 +623,7 @@ app.post('/api/auth/login', requireSupabase, async (req, res) => {
   }
 });
 
-app.post('/api/auth/refresh', requireSupabase, async (req, res) => {
+app.post('/api/auth/refresh', authLimiter, requireSupabase, async (req, res) => {
   try {
     const cookies = parseCookies(req);
     const refreshToken = (req.body && req.body.refresh_token) || cookies.bak_refresh_token;
@@ -697,7 +751,6 @@ app.put('/api/profile', requireAuth, async (req, res) => {
       'last_donation_date' in body;
 
     const existingProfile = await ensureProfile(req.supabase, req.user);
-    let healthMeta = null;
 
     if (hasHealthInput) {
       const mergedHealth = extractHealthFields({ ...existingProfile, ...body });
@@ -705,7 +758,6 @@ app.put('/api/profile', requireAuth, async (req, res) => {
       if (mergedHealth.eligibility_status === 'deferred') {
         updates.is_donor = false;
       }
-      healthMeta = mergedHealth;
       await req.supabase.auth.updateUser({ data: mergedHealth }).catch(() => {});
     }
 
@@ -729,8 +781,7 @@ app.put('/api/profile', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'PROFILE_UPDATE_FAILED', message: error.message });
     }
 
-    const outProfile = healthMeta ? { ...data, ...healthMeta } : mergeHealthMeta(data, req.user);
-    return res.json({ profile: outProfile });
+    return res.json({ profile: data });
   } catch (err) {
     console.error('Profile update error:', err);
     return res.status(500).json({ error: 'SERVER_ERROR', message: err.message || 'Failed to update profile' });
@@ -738,6 +789,11 @@ app.put('/api/profile', requireAuth, async (req, res) => {
 });
 
 /* ---------- Donors Directory & Map API ---------- */
+
+function cleanSearchTerm(val) {
+  if (typeof val !== 'string') return '';
+  return val.replace(/[,()%*\\"']/g, '').trim().slice(0, 40).trim();
+}
 
 app.get('/api/donors', async (req, res) => {
   if (!isSupabaseConfigured()) {
@@ -754,19 +810,20 @@ app.get('/api/donors', async (req, res) => {
     const { blood_group, wilaya, q, lat, lng } = req.query;
 
     let query = supabase
-      .from('profiles')
-      .select('id, full_name, blood_group, wilaya, phone, avatar, is_donor, lat, lng')
-      .eq('is_donor', true)
-      .order('updated_at', { ascending: false });
+      .from('public_donors')
+      .select('id, full_name, blood_group, wilaya, avatar, lat, lng, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(200);
 
     if (blood_group && blood_group !== 'all' && BLOOD_GROUPS.includes(blood_group)) {
       query = query.eq('blood_group', blood_group);
     }
-    if (wilaya && wilaya !== 'all') {
-      query = query.ilike('wilaya', `%${String(wilaya).trim()}%`);
+    const cleanWilaya = cleanSearchTerm(wilaya);
+    if (cleanWilaya && cleanWilaya.toLowerCase() !== 'all') {
+      query = query.ilike('wilaya', `%${cleanWilaya}%`);
     }
-    if (q && String(q).trim()) {
-      const term = String(q).trim();
+    const term = cleanSearchTerm(q);
+    if (term) {
       query = query.or(`full_name.ilike.%${term}%,wilaya.ilike.%${term}%`);
     }
 
@@ -786,7 +843,7 @@ app.get('/api/donors', async (req, res) => {
         n: row.full_name,
         g: row.blood_group,
         w: row.wilaya,
-        tel: row.phone || '',
+        tel: '',
         a: AVATARS.includes(row.avatar) ? row.avatar : 'av1',
         lat: dLat,
         lng: dLng,
@@ -930,31 +987,47 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/requests', requireAuth, async (req, res) => {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+app.post('/api/requests', requestsLimiter, requireAuth, async (req, res) => {
   try {
     const { donor_id, blood_group, wilaya, message } = req.body || {};
-    if (!donor_id) {
-      return res.status(400).json({ error: 'MISSING_DONOR', message: 'Donor ID is required.' });
+    if (typeof donor_id !== 'string' || !UUID_RE.test(donor_id.trim())) {
+      return res.status(400).json({ error: 'INVALID_DONOR', message: 'Valid donor ID is required.' });
     }
 
     const profile = await ensureProfile(req.supabase, req.user);
     const cleanBlood = BLOOD_GROUPS.includes(blood_group) ? blood_group : profile.blood_group || 'O+';
+    const cleanMessage = typeof message === 'string' ? message.trim().slice(0, 500) : '';
 
     const { data, error } = await req.supabase
       .from('blood_requests')
       .insert({
         requester_id: req.user.id,
-        donor_id,
+        donor_id: donor_id.trim(),
         requester_name: profile.full_name,
         requester_phone: profile.phone || '',
         blood_group: cleanBlood,
         wilaya: typeof wilaya === 'string' && wilaya.trim() ? wilaya.trim() : profile.wilaya || 'Alger',
-        message: typeof message === 'string' ? message.trim() : '',
+        message: cleanMessage,
       })
       .select('*')
       .single();
 
     if (error) {
+      const msg = String(error.message || '');
+      if (msg.includes('RATE_LIMIT')) {
+        return res.status(429).json({ error: 'RATE_LIMIT', message: 'Too many blood requests. Please try again later.' });
+      }
+      if (msg.includes('ALREADY_REQUESTED')) {
+        return res.status(409).json({ error: 'ALREADY_REQUESTED', message: 'You have already sent a request to this donor.' });
+      }
+      if (msg.includes('SELF_REQUEST')) {
+        return res.status(400).json({ error: 'SELF_REQUEST', message: 'You cannot send a blood request to yourself.' });
+      }
+      if (msg.includes('PROFILE_REQUIRED')) {
+        return res.status(400).json({ error: 'PROFILE_REQUIRED', message: 'A completed profile is required before sending requests.' });
+      }
       return res.status(400).json({ error: 'REQUEST_FAILED', message: error.message });
     }
 
@@ -989,12 +1062,63 @@ app.patch('/api/notifications/:id/read', requireAuth, async (req, res) => {
 
 /* ---------- Free OpenStreetMap Geocoding API (No API Key Required) ---------- */
 
-app.get('/api/geocode', async (req, res) => {
+const NOMINATIM_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const NOMINATIM_CACHE_MAX = 500;
+const nominatimCache = new Map();
+let nominatimQueue = Promise.resolve();
+let lastNominatimCallAt = 0;
+
+function getCachedNominatim(key) {
+  const entry = nominatimCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > NOMINATIM_CACHE_TTL_MS) {
+    nominatimCache.delete(key);
+    return null;
+  }
+  nominatimCache.delete(key);
+  nominatimCache.set(key, entry);
+  return entry.val;
+}
+
+function setCachedNominatim(key, val) {
+  if (nominatimCache.has(key)) nominatimCache.delete(key);
+  while (nominatimCache.size >= NOMINATIM_CACHE_MAX) {
+    const oldestKey = nominatimCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    nominatimCache.delete(oldestKey);
+  }
+  nominatimCache.set(key, { val, ts: Date.now() });
+}
+
+function fetchNominatimSerial(urlStr) {
+  const task = nominatimQueue.then(async () => {
+    const waitMs = Math.max(0, 1000 - (Date.now() - lastNominatimCallAt));
+    if (waitMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+    lastNominatimCallAt = Date.now();
+    return fetch(urlStr, {
+      headers: {
+        'User-Agent': 'BAK-BloodDonationApp/1.0 (https://github.com/nexaamdz-art/BAK)',
+      },
+    });
+  });
+  nominatimQueue = task.catch(() => {});
+  return task;
+}
+
+app.get('/api/geocode', nominatimLimiter, async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
     const lang = ['fr', 'en', 'ar'].includes(String(req.query.lang)) ? String(req.query.lang) : 'fr';
     if (!q || q.length < 2) {
       return res.status(400).json({ error: 'INVALID_QUERY', results: [] });
+    }
+
+    const cacheKey = `geo:${lang}:${q.toLowerCase()}`;
+    const cached = getCachedNominatim(cacheKey);
+    if (cached) {
+      return res.json({ results: cached });
     }
 
     const url = new URL('https://nominatim.openstreetmap.org/search');
@@ -1004,11 +1128,7 @@ app.get('/api/geocode', async (req, res) => {
     url.searchParams.set('countrycodes', 'dz');
     url.searchParams.set('accept-language', lang);
 
-    const r = await fetch(url.toString(), {
-      headers: {
-        'User-Agent': 'BAK-BloodDonationApp/1.0 (https://github.com/nexaamdz-art/BAK)',
-      },
-    });
+    const r = await fetchNominatimSerial(url.toString());
     if (!r.ok) {
       return res.status(502).json({ error: 'GEOCODE_FAILED', results: [] });
     }
@@ -1019,6 +1139,7 @@ app.get('/api/geocode', async (req, res) => {
       lng: Number(item.lon),
     })).filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng));
 
+    setCachedNominatim(cacheKey, results);
     return res.json({ results });
   } catch (err) {
     console.error('Geocode error:', err);
@@ -1026,7 +1147,7 @@ app.get('/api/geocode', async (req, res) => {
   }
 });
 
-app.get('/api/hospitals', async (req, res) => {
+app.get('/api/hospitals', nominatimLimiter, async (req, res) => {
   try {
     const wilaya = String(req.query.wilaya || '').trim();
     const lang = ['fr', 'en', 'ar'].includes(String(req.query.lang)) ? String(req.query.lang) : 'fr';
@@ -1034,6 +1155,14 @@ app.get('/api/hospitals', async (req, res) => {
     const lngNum = Number(req.query.lng);
     const hasCoords = Number.isFinite(latNum) && Number.isFinite(lngNum);
     const center = hasCoords ? { lat: latNum, lng: lngNum } : coordsForWilaya(wilaya || 'Alger');
+
+    const latKey = hasCoords ? latNum.toFixed(2) : '';
+    const lngKey = hasCoords ? lngNum.toFixed(2) : '';
+    const cacheKey = `hosp:${lang}:${wilaya.toLowerCase()}:${latKey}:${lngKey}`;
+    const cached = getCachedNominatim(cacheKey);
+    if (cached) {
+      return res.json({ hospitals: cached });
+    }
 
     const url = new URL('https://nominatim.openstreetmap.org/search');
     const searchTerm = wilaya && !hasCoords ? `hopital ${wilaya}` : 'hopital';
@@ -1050,11 +1179,7 @@ app.get('/api/hospitals', async (req, res) => {
     );
     url.searchParams.set('bounded', hasCoords ? '1' : '0');
 
-    const r = await fetch(url.toString(), {
-      headers: {
-        'User-Agent': 'BAK-BloodDonationApp/1.0 (https://github.com/nexaamdz-art/BAK)',
-      },
-    });
+    const r = await fetchNominatimSerial(url.toString());
     if (!r.ok) {
       return res.json({ hospitals: [] });
     }
@@ -1083,7 +1208,9 @@ app.get('/api/hospitals', async (req, res) => {
       });
     }
     hospitals.sort((a, b) => a.d - b.d);
-    return res.json({ hospitals: hospitals.slice(0, 8) });
+    const out = hospitals.slice(0, 8);
+    setCachedNominatim(cacheKey, out);
+    return res.json({ hospitals: out });
   } catch (err) {
     console.error('Hospitals search error:', err);
     return res.json({ hospitals: [] });
@@ -1091,15 +1218,9 @@ app.get('/api/hospitals', async (req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  const customEnvKeys = Object.keys(process.env).filter(
-    (k) => !/^(AWS_|VERCEL_|NODE_|_|PATH|HOME|PWD|npm_|TERM|LANG|SHELL|HOSTNAME|PORT|SHLVL)/i.test(k)
-  );
   res.json({
     ok: true,
     supabaseConfigured: isSupabaseConfigured(),
-    hasUrl: Boolean(getSupabaseUrl()),
-    hasKey: Boolean(getSupabaseKey()),
-    customEnvKeys,
   });
 });
 
