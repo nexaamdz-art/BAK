@@ -492,7 +492,7 @@ const healthQuestionsHTML=(p={})=>{
 
 /* ---------- Views ---------- */
 const V={
-splash:()=>`<div class="scr splash"><div class="bg"></div>${cells([['torn-tr','top:0;right:0;width:46%'],['torn-bl','bottom:0;left:0;width:60%'],['cell','top:12%;left:-8px;width:62px;transform:rotate(-20deg)'],['cell','top:48%;right:-14px;width:80px'],['cell','bottom:5%;right:6%;width:70px;transform:rotate(30deg)']])}<img class="logo" src="assets/logo.webp" alt="BAK"><h2>BAK</h2><p>${t('tag')}</p>${ecg()}<div class="end">${t('end')}</div><div class="pbar"><i></i></div></div>`,
+splash:()=>`<div class="scr splash"><div class="bg"></div>${cells([['torn-tr','top:0;right:0;width:46%'],['torn-bl','bottom:0;left:0;width:60%'],['cell','top:12%;left:-8px;width:62px;transform:rotate(-20deg)'],['cell','top:48%;right:-14px;width:80px'],['cell','bottom:5%;right:6%;width:70px;transform:rotate(30deg)']])}<img class="logo" src="assets/logo.webp?v=24" alt="BAK"><h2>BAK</h2><p>${t('tag')}</p>${ecg()}<div class="end">${t('end')}</div><div class="pbar"><i></i></div></div>`,
 
 auth:()=>`<div class="scr"><div class="bg"></div>${cells([['cell','top:16%;right:-18px;width:72px'],['cell','bottom:14%;left:-18px;width:72px']])}<div class="body">${hd(authTab==='login'?t('loginTab'):t('signupTab'))}
   <div class="tabs">
@@ -529,7 +529,7 @@ home:()=>{
   const unread=unreadCount();
   return `<div class="scr"><div class="bg"></div>${cells([['cells','bottom:76px;inset-inline-end:-56px;width:126px;opacity:.4'],['cell','top:62%;inset-inline-start:-22px;width:48px;opacity:.22;transform:rotate(-18deg)']])}<div class="body">
     <div class="brand">
-      <img src="assets/logo.webp" alt=""><b>BAK</b>
+      <img src="assets/logo.webp?v=24" alt=""><b>BAK</b>
       <div class="acct">
         ${currentUser
           ?`<button class="avbtn" data-go="#/profile" aria-label="profile"><img src="assets/${av}.webp" alt=""></button>`
@@ -763,7 +763,7 @@ help:()=>`<div class="scr"><div class="bg"></div><div class="body">${hd(t('helpT
 
 about:()=>`<div class="scr"><div class="bg"></div><div class="body">${hd(t('aboutTitle'))}
   <div class="fcard" style="text-align:center">
-    <img src="assets/logo.webp" alt="BAK" style="width:88px;margin-bottom:8px">
+    <img src="assets/logo.webp?v=24" alt="BAK" style="width:88px;margin-bottom:8px">
     <h3>BAK — ${t('tag')}</h3>
     <p class="sub">${t('sub')}</p>
     <button class="btn" data-go="#/home">${t('back')}</button>
@@ -1048,7 +1048,7 @@ function bindForms(){
 
 /* ---------- Real Asset Preloader ---------- */
 const PRELOAD_ASSETS=[
-  'assets/logo.webp','assets/torn-tr.webp','assets/torn-bl.webp','assets/cell.webp','assets/cells.webp',
+  'assets/logo.webp?v=24','assets/torn-tr.webp','assets/torn-bl.webp','assets/cell.webp','assets/cells.webp',
   'assets/drop-hand.webp','assets/tile-find.webp','assets/tile-join.webp','assets/bar-learn.webp',
   'assets/paper.webp','assets/paper-wide.webp','assets/paper-lines2.webp','assets/paper-lines3.webp',
   'assets/paper-tall-lines.webp','assets/bar.webp','assets/bag.webp','assets/map.webp',
