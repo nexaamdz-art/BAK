@@ -52,10 +52,10 @@ nav button.on::after{content:"";position:absolute;bottom:-5px;width:30px;height:
 .brand button{margin-inline-start:auto;position:relative;width:36px;height:36px;display:grid;place-items:center;font-size:19px;transition:transform .14s ease}
 .brand button:active{transform:scale(.92)}
 .brand button i{position:absolute;top:6px;inset-inline-end:7px;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(214,18,31,.7)}
-.hero{position:relative;min-height:266px;padding:6px 0 12px}
-.hero h3{display:flex;flex-direction:column;gap:5px;font:italic 500 42px/1.05 var(--serif);margin-top:38px;position:relative;z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+.hero{position:relative;min-height:306px;padding:6px 0 12px}
+.hero h3{display:flex;flex-direction:column;gap:5px;font:italic 500 42px/1.05 var(--serif);margin-top:76px;position:relative;z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.35)}
 .hero h3 span{display:block}.hero h3 span:last-child{color:#e0141f}
-.hero p{font-style:italic;font-weight:500;font-size:15.5px;max-width:54%;margin-top:14px;line-height:1.4;color:rgba(246,236,231,.94);position:relative;z-index:2;text-shadow:0 1px 6px rgba(0,0,0,.45)}
+.hero p{font-style:italic;font-weight:500;font-size:15.5px;max-width:54%;margin-top:18px;line-height:1.4;color:rgba(246,236,231,.94);position:relative;z-index:2;text-shadow:0 1px 6px rgba(0,0,0,.45)}
 html.light .hero h3,html.light .hero p{text-shadow:none;color:var(--fg)}
 .hero img{position:absolute;inset-inline-end:-10px;top:18px;width:41%;max-width:162px;z-index:1;pointer-events:none}
 .hero .ecg{position:absolute;inset-inline-end:0;top:72px;width:68%;opacity:.55;z-index:0;pointer-events:none}
@@ -84,7 +84,7 @@ html[dir=rtl] .learn svg{transform:translateY(-50%) scaleX(-1)}
   .body{padding:calc(env(safe-area-inset-top) + 4px) 14px 8px}
   .brand{height:44px}.brand img{width:36px}.brand b{font-size:24px}
   .hd{height:46px;margin-bottom:4px}.hd h1{font-size:21px}
-  .hero{min-height:228px;padding-bottom:8px}.hero h3{font-size:38px;gap:3px;margin-top:20px}.hero p{font-size:14.5px;margin-top:10px}.hero img{width:39%;top:14px}
+  .hero{min-height:252px;padding-bottom:8px}.hero h3{font-size:38px;gap:3px;margin-top:42px}.hero p{font-size:14.5px;margin-top:12px}.hero img{width:39%;top:14px}
   .btn{min-height:46px;height:46px;font-size:18px}
   .tiles{gap:10px;margin:10px 0 8px;padding-top:0}.tile{aspect-ratio:1/.86}.tile span{top:42%;bottom:26%;font-size:16px}
   .learn{height:58px;margin-top:0;margin-bottom:2px}.learn span{font-size:17px}

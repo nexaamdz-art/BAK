@@ -1,5 +1,5 @@
-const C='bak-v19';
-const A=['./','index.html','style.css?v=19','app.js?v=19','config.js?v=19','manifest.json','assets/logo.png','assets/paper.png','assets/bar.png','assets/map.jpg'];
+const C='bak-v20';
+const A=['./','index.html','style.css?v=20','app.js?v=20','config.js?v=20','manifest.json','assets/logo.png','assets/paper.png','assets/bar.png','assets/map.jpg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(A)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
