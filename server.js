@@ -414,63 +414,89 @@ function mergeHealthMeta(profile, user) {
 }
 
 async function ensureProfile(supabase, user) {
-  const { data: existing, error: selErr } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (selErr) {
-    throw selErr;
-  }
-  if (existing) {
-    return mergeHealthMeta(existing, user);
-  }
-
-  const meta = user.user_metadata || {};
-  const wilaya = typeof meta.wilaya === 'string' && meta.wilaya.trim() ? meta.wilaya.trim() : 'Alger';
-  const baseCoords = coordsForWilaya(wilaya);
-  const bloodGroup = BLOOD_GROUPS.includes(meta.blood_group) ? meta.blood_group : 'O+';
-  const health = extractHealthFields(meta);
-  const donorAllowed = health.eligibility_status === 'deferred' ? false : (typeof meta.is_donor === 'boolean' ? meta.is_donor : true);
-
-  const payload = {
-    id: user.id,
-    full_name:
-      typeof meta.full_name === 'string' && meta.full_name.trim()
-        ? meta.full_name.trim()
-        : (user.email || 'User').split('@')[0],
-    email: user.email || '',
-    blood_group: bloodGroup,
-    wilaya,
-    birth_date: typeof meta.birth_date === 'string' ? meta.birth_date : '',
-    phone: typeof meta.phone === 'string' ? meta.phone : '',
-    avatar: AVATARS.includes(meta.avatar) ? meta.avatar : 'me',
-    is_donor: donorAllowed,
-    lat: typeof meta.lat === 'number' ? meta.lat : baseCoords.lat,
-    lng: typeof meta.lng === 'number' ? meta.lng : baseCoords.lng,
-    notifications_enabled: true,
-    ...health,
-  };
-
-  let { data: inserted, error: insErr } = await supabase
-    .from('profiles')
-    .upsert(payload, { onConflict: 'id' })
-    .select('*')
-    .single();
-
-  if (insErr && isMissingColumnError(insErr)) {
-    ({ data: inserted, error: insErr } = await supabase
+  try {
+    const { data: existing, error: selErr } = await supabase
       .from('profiles')
-      .upsert(stripHealthCols(payload), { onConflict: 'id' })
       .select('*')
-      .single());
-  }
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (insErr) {
-    throw insErr;
+    if (!selErr && existing) {
+      return mergeHealthMeta(existing, user);
+    }
+
+    const meta = user.user_metadata || {};
+    const wilaya = typeof meta.wilaya === 'string' && meta.wilaya.trim() ? meta.wilaya.trim() : 'Alger';
+    const baseCoords = coordsForWilaya(wilaya);
+    const bloodGroup = BLOOD_GROUPS.includes(meta.blood_group) ? meta.blood_group : 'O+';
+    const health = extractHealthFields(meta);
+    const donorAllowed = health.eligibility_status === 'deferred' ? false : (typeof meta.is_donor === 'boolean' ? meta.is_donor : true);
+
+    const payload = {
+      id: user.id,
+      full_name:
+        typeof meta.full_name === 'string' && meta.full_name.trim()
+          ? meta.full_name.trim()
+          : (user.email || 'User').split('@')[0],
+      email: user.email || '',
+      blood_group: bloodGroup,
+      wilaya,
+      birth_date: typeof meta.birth_date === 'string' ? meta.birth_date : '',
+      phone: typeof meta.phone === 'string' ? meta.phone : '',
+      avatar: AVATARS.includes(meta.avatar) ? meta.avatar : 'me',
+      is_donor: donorAllowed,
+      lat: typeof meta.lat === 'number' ? meta.lat : baseCoords.lat,
+      lng: typeof meta.lng === 'number' ? meta.lng : baseCoords.lng,
+      notifications_enabled: true,
+      ...health,
+    };
+
+    let { data: inserted, error: insErr } = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+      .select('*')
+      .single();
+
+    if (insErr && isMissingColumnError(insErr)) {
+      ({ data: inserted, error: insErr } = await supabase
+        .from('profiles')
+        .upsert(stripHealthCols(payload), { onConflict: 'id' })
+        .select('*')
+        .single());
+    }
+
+    if (insErr) {
+      console.warn('Profile upsert warning:', insErr.message);
+      return {
+        id: user.id,
+        full_name: payload.full_name,
+        email: payload.email,
+        blood_group: payload.blood_group,
+        wilaya: payload.wilaya,
+        avatar: payload.avatar,
+        lat: payload.lat,
+        lng: payload.lng,
+        is_donor: payload.is_donor,
+        ...health,
+      };
+    }
+    return mergeHealthMeta(inserted, user);
+  } catch (err) {
+    console.warn('ensureProfile caught error:', err.message);
+    const meta = user.user_metadata || {};
+    return {
+      id: user.id,
+      full_name: meta.full_name || user.email || 'User',
+      email: user.email || '',
+      blood_group: meta.blood_group || 'O+',
+      wilaya: meta.wilaya || 'Alger',
+      avatar: 'me',
+      lat: 36.7538,
+      lng: 3.0588,
+      is_donor: true,
+      ...extractHealthFields(meta),
+    };
   }
-  return mergeHealthMeta(inserted, user);
 }
 
 /* ---------- Auth API ---------- */
