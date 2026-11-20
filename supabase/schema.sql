@@ -179,6 +179,8 @@ begin
   )
   on conflict (id) do nothing;
   return new;
+exception when others then
+  return new;
 end;
 $$;
 
