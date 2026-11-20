@@ -1,9 +1,9 @@
--- BAK Supabase Schema & Row Level Security (RLS)
+-- BAK Supabase Complete Secure Schema & Robust Trigger
 -- Run this script in your Supabase Project -> SQL Editor
 
 create extension if not exists pgcrypto;
 
--- 1. User & Donor Profiles
+-- 1. User & Donor Profiles Table
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null,
@@ -30,7 +30,7 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
--- If profiles table already exists, run these safe migrations:
+-- Safe migrations for existing tables
 alter table public.profiles add column if not exists gender text not null default 'male';
 alter table public.profiles add column if not exists pregnant_or_breastfeeding boolean not null default false;
 alter table public.profiles add column if not exists weight_over_50 boolean not null default true;
@@ -41,7 +41,7 @@ alter table public.profiles add column if not exists taking_medication boolean n
 alter table public.profiles add column if not exists last_donation_date text default '';
 alter table public.profiles add column if not exists eligibility_status text not null default 'eligible';
 
--- 2. Blood Donations (History & Scheduled)
+-- 2. Blood Donations Table
 create table if not exists public.donations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -53,7 +53,7 @@ create table if not exists public.donations (
   created_at timestamptz not null default now()
 );
 
--- 3. Blood Requests & Notifications
+-- 3. Blood Requests & Notifications Table
 create table if not exists public.blood_requests (
   id uuid primary key default gen_random_uuid(),
   requester_id uuid references auth.users(id) on delete set null,
@@ -67,68 +67,75 @@ create table if not exists public.blood_requests (
   created_at timestamptz not null default now()
 );
 
--- Enable Row Level Security
+-- 4. Secure Public Donors View with security_invoker = true (Fixes Security Definer View warning)
+drop view if exists public.public_donors;
+create view public.public_donors with (security_invoker = true) as
+  select id, full_name, blood_group, wilaya, avatar, lat, lng, updated_at
+  from public.profiles
+  where is_donor = true;
+
+-- Enable Row Level Security (RLS)
 alter table public.profiles enable row level security;
 alter table public.donations enable row level security;
 alter table public.blood_requests enable row level security;
 
--- Profiles Policies
+-- Profiles Policies (Optimized with (select auth.uid()) to fix Auth RLS Initialization Plan warning)
 drop policy if exists "Public donor profiles are viewable" on public.profiles;
 create policy "Public donor profiles are viewable"
   on public.profiles for select
-  using (is_donor = true or auth.uid() = id);
+  using (is_donor = true or id = (select auth.uid()));
 
 drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile"
   on public.profiles for insert
-  with check (auth.uid() = id);
+  with check (id = (select auth.uid()));
 
 drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
   on public.profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
+  using (id = (select auth.uid()))
+  with check (id = (select auth.uid()));
 
 -- Donations Policies
 drop policy if exists "Users can view own donations" on public.donations;
 create policy "Users can view own donations"
   on public.donations for select
-  using (auth.uid() = user_id);
+  using (user_id = (select auth.uid()));
 
 drop policy if exists "Users can insert own donations" on public.donations;
 create policy "Users can insert own donations"
   on public.donations for insert
-  with check (auth.uid() = user_id);
+  with check (user_id = (select auth.uid()));
 
 drop policy if exists "Users can update own donations" on public.donations;
 create policy "Users can update own donations"
   on public.donations for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
 
 drop policy if exists "Users can delete own donations" on public.donations;
 create policy "Users can delete own donations"
   on public.donations for delete
-  using (auth.uid() = user_id);
+  using (user_id = (select auth.uid()));
 
 -- Blood Requests Policies
 drop policy if exists "Users can view related blood requests" on public.blood_requests;
 create policy "Users can view related blood requests"
   on public.blood_requests for select
-  using (auth.uid() = donor_id or auth.uid() = requester_id);
+  using (donor_id = (select auth.uid()) or requester_id = (select auth.uid()));
 
 drop policy if exists "Authenticated users can send blood requests" on public.blood_requests;
 create policy "Authenticated users can send blood requests"
   on public.blood_requests for insert
-  with check (auth.uid() = requester_id);
+  with check (requester_id = (select auth.uid()));
 
 drop policy if exists "Donors can mark requests as read" on public.blood_requests;
 create policy "Donors can mark requests as read"
   on public.blood_requests for update
-  using (auth.uid() = donor_id)
-  with check (auth.uid() = donor_id);
+  using (donor_id = (select auth.uid()))
+  with check (donor_id = (select auth.uid()));
 
--- Automatic profile creation trigger on auth.users signup
+-- 5. Robust & Secure Automatic Profile Creation Trigger on auth.users signup
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -180,6 +187,7 @@ begin
   on conflict (id) do nothing;
   return new;
 exception when others then
+  -- Fail-safe exception handler ensures Supabase Auth user creation never aborts with database error
   return new;
 end;
 $$;
